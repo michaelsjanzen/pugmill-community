@@ -16,7 +16,7 @@ This guide contains the exact sequence and code blueprints for building ReplPres
 
 ---
 
-## Sprint 1: The Core Logic & Config Utilities
+## Sprint 1: Core Logic & Config Utilities
 **Goal:** Create the bridge between the JSON config and the app.
 
 > "Create `src/lib/config.ts` with `getConfig()` and `updateConfig()` functions to read/write to `replpress.config.json`. Ensure these are usable in both Server Components and Server Actions."
@@ -52,3 +52,20 @@ This guide contains the exact sequence and code blueprints for building ReplPres
 ```typescript
 import { hooks } from "../../src/lib/hooks";
 hooks.addFilter('theme_footer_text', () => "Built with ❤️ on ReplPress");
+```
+
+### Plugin Reference 2: SEO Optimizer
+**Path:** `/plugins/seo-optimizer/index.ts`
+```typescript
+import { hooks import { hooks } from "../../src/lib/hooks";
+hooks.addFilter('theme_head_tags', (tags) => tags + '<meta name="generator" content="ReplPress" />');
+```
+
+**Prompt for the Agent:**
+> "Build a plugin loader that scans the `/plugins` directory. Register plugins listed in `activePlugins`. Then, create the 'Hello World' and 'SEO Optimizer' plugins using the references in `GUIDE.md`. Finally, add a 'Plugins' toggle page in the Admin Dashboard."
+
+---
+
+## Troubleshooting & Rebuilding
+- **DB Mismatch:** "Check `schema.ts` and run `db:push`."
+- **Missing Hooks:** "Ensure the active theme actually calls `doAction` or `applyFilters` in its components."
