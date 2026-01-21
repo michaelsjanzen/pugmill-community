@@ -11,8 +11,7 @@ This guide contains the exact prompts and sequence required to build ReplPress u
 ## Sprint 1: The Core Engine
 **Goal:** Initialize the environment, database, and the Hook system.
 
-**Prompt to give the Agent:**
-> "Read `AGENT.md` and `package.json`. First, install the dependencies. Then, create the Drizzle schema in `src/lib/db/schema.ts` with tables for 'posts' (id, title, content, slug, authorId, createdAt) and 'settings' (key, value). Finally, implement the `HookManager` in `src/lib/hooks.ts` as described in our architecture."
+**Prompt to give the Agent:**Read AGENT.md and package.json. First, install the dependencies. Then, create the Drizzle schema in src/lib/db/schema.ts using the provided blueprint. Crucially, create src/lib/db/index.ts to initialize the database connection using the pg driver and the DATABASE_URL environment variable. Finally, implement the HookManager in src/lib/hooks.ts and verify the database connection is active.
 
 ---
 
