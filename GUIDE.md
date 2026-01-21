@@ -5,7 +5,7 @@ This guide contains the exact sequence and code blueprints for building ReplPres
 ---
 
 ## 0. The Master Initialization
-**Run this first to align the Agent with the project vision.**
+**Goal:** Align the Agent with the project vision and setup the DB connection.
 
 > "I am building **ReplPress**, an AI-native, rebuildable CMS. I have provided `AGENT.md`, `package.json`, `replpress.config.json`, and `src/lib/db/schema.ts`. 
 > 1. Read all files to understand the Hook System and modular architecture.
@@ -44,25 +44,20 @@ This guide contains the exact sequence and code blueprints for building ReplPres
 
 ---
 
-## Sprint 4: The Plugin System & Reference Examples
-**Goal:** Enable modularity. Use the following code as a reference for the first two plugins.
+## Sprint 4: The Plugin System
+**Goal:** Enable modularity using the Hook System.
 
-### Plugin Reference 1: Hello World
-**Path:** `/plugins/hello-world/index.ts`
-```typescript
-import { hooks } from "../../src/lib/hooks";
-hooks.addFilter('theme_footer_text', () => "Built with ❤️ on ReplPress");
-```
+> "Build a plugin loader that scans the `/plugins` directory. Register plugins listed in `activePlugins`. Then, create a 'Hello World' plugin that uses `hooks.addFilter('theme_footer_text', () => 'Built with ❤️ on ReplPress')`. Finally, add a 'Plugins' toggle page in the Admin Dashboard."
 
-### Plugin Reference 2: SEO Optimizer
-**Path:** `/plugins/seo-optimizer/index.ts`
-```typescript
-import { hooks import { hooks } from "../../src/lib/hooks";
-hooks.addFilter('theme_head_tags', (tags) => tags + '<meta name="generator" content="ReplPress" />');
-```
+---
 
-**Prompt for the Agent:**
-> "Build a plugin loader that scans the `/plugins` directory. Register plugins listed in `activePlugins`. Then, create the 'Hello World' and 'SEO Optimizer' plugins using the references in `GUIDE.md`. Finally, add a 'Plugins' toggle page in the Admin Dashboard."
+## Sprint 5: Media & Assets
+**Goal:** Enable image uploads and management.
+
+> "1. Ensure the `media` table in `schema.ts` is pushed to the DB.
+> 2. Create a Server Action in `src/lib/actions/media.ts` to handle file uploads to the `/public/uploads` directory.
+> 3. Build a 'Media Library' page in the Admin Dashboard to display and delete images.
+> 4. Update the Post Editor to allow selecting a 'Featured Image' from the Media Library."
 
 ---
 
