@@ -27,6 +27,7 @@
  *   creates everything from scratch, making this script unnecessary.
  */
 
+import "./_load-env";
 import { db } from "../src/lib/db";
 import { sql } from "drizzle-orm";
 

@@ -1,3 +1,4 @@
+import "./_load-env";
 import { db } from "../src/lib/db";
 import { adminUsers } from "../src/lib/db/schema";
 import bcrypt from "bcryptjs";

@@ -10,6 +10,7 @@
  * Also runs automatically before dev server starts.
  */
 
+import "./_load-env";
 import fs from "fs";
 import path from "path";
 
