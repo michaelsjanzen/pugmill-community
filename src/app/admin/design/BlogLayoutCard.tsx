@@ -1,0 +1,166 @@
+"use client";
+import { useState, useTransition, useEffect, useRef } from "react";
+import { useDesignSave } from "./DesignSaveContext";
+
+interface Props {
+  initialFeedStyle: "list" | "grid";
+  initialListStyle: "compact" | "editorial" | "feature" | "text-only";
+  initialColumns: "1" | "2" | "3";
+  initialGap: "sm" | "md" | "lg";
+  hasDraft: boolean;
+  saveAction: (partial: Record<string, string>) => Promise<void>;
+}
+
+const LIST_STYLES: { value: "compact" | "editorial" | "feature" | "text-only"; label: string }[] = [
+  { value: "compact",   label: "Compact" },
+  { value: "editorial", label: "Editorial" },
+  { value: "feature",   label: "Feature" },
+  { value: "text-only", label: "Text only" },
+];
+
+export default function BlogLayoutCard({
+  initialFeedStyle,
+  initialListStyle,
+  initialColumns,
+  initialGap,
+  hasDraft,
+  saveAction,
+}: Props) {
+  const [feedStyle, setFeedStyle] = useState(initialFeedStyle);
+  const [listStyle, setListStyle] = useState(initialListStyle);
+  const [columns, setColumns] = useState(initialColumns);
+  const [gap, setGap] = useState(initialGap);
+  const [, startTransition] = useTransition();
+  const { setIsSaving } = useDesignSave();
+
+  // Sync local state when hasDraft transitions true → false (publish / discard).
+  const prevHasDraftRef = useRef(hasDraft);
+  useEffect(() => {
+    const wasDraft = prevHasDraftRef.current;
+    prevHasDraftRef.current = hasDraft;
+    if (wasDraft && !hasDraft) {
+      setFeedStyle(initialFeedStyle);
+      setListStyle(initialListStyle);
+      setColumns(initialColumns);
+      setGap(initialGap);
+    }
+  }, [hasDraft, initialFeedStyle, initialListStyle, initialColumns, initialGap]);
+
+  function saveFeed(partial: Record<string, string>) {
+    const full = {
+      blogFeedStyle: feedStyle,
+      blogListStyle: listStyle,
+      blogColumns: columns,
+      blogGap: gap,
+      ...partial,
+    };
+    setIsSaving(true);
+    startTransition(async () => {
+      await saveAction(full);
+      setIsSaving(false);
+    });
+  }
+
+  return (
+    <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
+
+      {/* Card header */}
+      <div className="px-5 py-4 border-b border-zinc-100">
+        <h3 className="text-base font-semibold text-zinc-800">Layout — Blog</h3>
+        <p className="text-xs text-zinc-600 mt-0.5">Feed style for the /blog archive page.</p>
+      </div>
+
+      {/* Controls */}
+      <div className="px-5 py-5 space-y-5">
+
+        {/* Feed style */}
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <span className="text-sm font-medium text-zinc-700">Feed style</span>
+            <p className="text-xs text-zinc-600 mt-0.5">Display posts as a list or a grid.</p>
+          </div>
+          <div className="flex gap-1 shrink-0">
+            {(["list", "grid"] as const).map(s => (
+              <button
+                key={s} type="button"
+                onClick={() => { setFeedStyle(s); saveFeed({ blogFeedStyle: s }); }}
+                className={`px-4 py-1.5 text-xs rounded-lg capitalize font-medium transition-colors ${
+                  feedStyle === s ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* List style (only in list mode) */}
+        {feedStyle === "list" && (
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <span className="text-sm font-medium text-zinc-700">List style</span>
+              <p className="text-xs text-zinc-600 mt-0.5">Visual layout for each post row.</p>
+            </div>
+            <div className="flex gap-1 shrink-0">
+              {LIST_STYLES.map(({ value, label }) => (
+                <button
+                  key={value} type="button"
+                  onClick={() => { setListStyle(value); saveFeed({ blogListStyle: value }); }}
+                  className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                    listStyle === value ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Grid columns (only in grid mode) */}
+        {feedStyle === "grid" && (
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <span className="text-sm font-medium text-zinc-700">Columns</span>
+              <p className="text-xs text-zinc-600 mt-0.5">Number of columns in the grid.</p>
+            </div>
+            <div className="flex gap-1 shrink-0">
+              {(["1", "2", "3"] as const).map(c => (
+                <button
+                  key={c} type="button"
+                  onClick={() => { setColumns(c); saveFeed({ blogColumns: c }); }}
+                  className={`px-4 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                    columns === c ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Gap */}
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <span className="text-sm font-medium text-zinc-700">Gap</span>
+            <p className="text-xs text-zinc-600 mt-0.5">Spacing between items.</p>
+          </div>
+          <div className="flex gap-1 shrink-0">
+            {([["sm", "S"], ["md", "M"], ["lg", "L"]] as const).map(([val, label]) => (
+              <button
+                key={val} type="button"
+                onClick={() => { setGap(val); saveFeed({ blogGap: val }); }}
+                className={`px-4 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                  gap === val ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

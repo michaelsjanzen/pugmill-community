@@ -1,0 +1,6 @@
+{
+  "id": "contact-form",
+  "name": "Contact Form",
+  "version": "1.0.0",
+  "description": "Adds a contact form to a designated page. Submissions are stored in the database and visible in the admin inbox."
+}

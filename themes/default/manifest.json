@@ -1,0 +1,11 @@
+{
+  "id": "default",
+  "name": "Default",
+  "version": "0.1.0",
+  "description": "Clean, minimal theme inspired by developer-focused design systems. Sticky header, responsive navigation, and a simple footer.",
+  "author": "Pugmill",
+  "authorUrl": "https://pugmill.dev",
+  "previewUrl": "",
+  "tags": ["minimal", "blog", "developer"],
+  "compatibleWith": ">=0.1.0"
+}

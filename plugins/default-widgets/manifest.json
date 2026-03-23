@@ -1,0 +1,6 @@
+{
+  "id": "default-widgets",
+  "name": "Default Widgets",
+  "version": "1.0.0",
+  "description": "The standard set of sidebar and post-footer widgets: Table of Contents, Recent Posts, Related Posts, Categories, Sibling Pages, and Sub-pages."
+}

@@ -1,4 +1,4 @@
-# ReplPress Environment Configuration
+# Pugmill Environment Configuration
 modules = ["nodejs-22", "typescript-default", "postgresql-16"]
 
 # The primary command to start the development environment

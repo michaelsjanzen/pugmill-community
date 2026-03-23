@@ -1,13 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-
-const CONFIG_PATH = path.join(process.cwd(), 'replpress.config.json');
-
-export function getConfig() {
-  const fileBuffer = fs.readFileSync(CONFIG_PATH, 'utf-8');
-  return JSON.parse(fileBuffer);
-}
-
-export function updateConfig(newConfig: any) {
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(newConfig, null, 2));
-}
+// Legacy shim — import from @/lib/config or src/lib/config instead
+export { getConfig, updateConfig, invalidateConfigCache, configSchema } from "../src/lib/config";
+export type { Config } from "../src/lib/config";

@@ -1,0 +1,47 @@
+{
+  "site": {
+    "name": "My Pugmill Site",
+    "description": "A rebuildable CMS",
+    "url": "https://your-site.com",
+    "logo": "",
+    "favicon": "",
+    "socialLinks": {
+      "twitter": "",
+      "github": "",
+      "linkedin": "",
+      "instagram": "",
+      "youtube": "",
+      "facebook": ""
+    },
+    "seoDefaults": {
+      "ogImage": "",
+      "metaDescription": ""
+    },
+    "aeoDefaults": {
+      "summary": "",
+      "questions": [],
+      "organization": {
+        "name": "",
+        "type": "Organization",
+        "description": "",
+        "url": ""
+      }
+    }
+  },
+  "appearance": {
+    "activeTheme": "default",
+    "navigation": [
+      { "label": "Home", "path": "/" },
+      { "label": "Blog", "path": "/blog" },
+      { "label": "About", "path": "/about" }
+    ]
+  },
+  "modules": {
+    "activePlugins": ["default-widgets", "contact-form"]
+  },
+  "system": {
+    "version": "0.1.0",
+    "headlessMode": false,
+    "maintenanceMode": false
+  }
+}

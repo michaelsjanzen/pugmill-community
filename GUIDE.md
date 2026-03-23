@@ -1,66 +1,68 @@
-# ReplPress: Implementation Guide (2026 Edition)
+# Pugmill: Implementation Guide (2026 Edition)
 
-This guide contains the exact sequence and code blueprints for building ReplPress. Use these prompts in order.
+This guide contains the build sequence and agent prompts for constructing Pugmill from scratch. Use these prompts in order when rebuilding or extending the system.
 
 ---
 
-## 0. The Master Initialization
-**Goal:** Align the Agent with the project vision and setup the DB connection.
+## 0. Initialization
+**Goal:** Align the agent with the project architecture and establish the database connection.
 
-> "I am building **ReplPress**, an AI-native, rebuildable CMS. I have provided `AGENT.md`, `package.json`, `replpress.config.json`, and `src/lib/db/schema.ts`. 
-> 1. Read all files to understand the Hook System and modular architecture.
-> 2. Install dependencies.
-> 3. Create `src/lib/db/index.ts` to connect to Replit PostgreSQL and run `db:push`.
-> 4. Implement the `HookManager` in `src/lib/hooks.ts`. 
+> "I am building **Pugmill**, an AI-native, rebuildable CMS. I have provided `AGENT.md`, `REQUIREMENTS.md`, `THEMES.md`, `HOOKS.md`, `package.json`, and `src/lib/db/schema.ts`.
+> 1. Read all provided files to understand the Hook System, design token contract, and modular architecture.
+> 2. Install dependencies with `npm install`.
+> 3. Create `src/lib/db/index.ts` to connect to PostgreSQL via `DATABASE_URL` and run `npm run db:push`.
+> 4. Implement the `HookManager` in `src/lib/hooks.ts`.
 > Confirm once the core engine is ready."
 
 ---
 
-## Sprint 1: Core Logic & Config Utilities
-**Goal:** Create the bridge between the JSON config and the app.
+## Sprint 1: Core Logic & Config
+**Goal:** Establish the DB-backed config system and server action patterns.
 
-> "Create `src/lib/config.ts` with `getConfig()` and `updateConfig()` functions to read/write to `replpress.config.json`. Ensure these are usable in both Server Components and Server Actions."
-
----
-
-## Sprint 2: The Dynamic Theme System
-**Goal:** Build the system that swaps the site's look.
-
-> "Create a 'Default' theme in `/themes/default`. It should have:
-> - `Layout.tsx`: Uses `hooks.applyFilters('theme_head_tags')` and `hooks.doAction('theme_footer')`.
-> - `views/HomeView.tsx`: A blog feed layout.
-> Then, create a dynamic loader in `src/app/page.tsx` that imports the correct View based on `activeTheme` in the config."
+> "Create `src/lib/config.ts` with `getConfig()` (async, 60s TTL in-memory cache) and `updateConfig()` (validates with Zod, upserts to DB, invalidates cache). Config shape is documented in `REQUIREMENTS.md §11`. Ensure both are usable in Server Components and Server Actions."
 
 ---
 
-## Sprint 3: The Admin Dashboard (CRUD)
-**Goal:** Create the content management interface.
+## Sprint 2: Theme System
+**Goal:** Build the dynamic theme loader and the default theme.
 
-> "Build the Admin Dashboard at `/admin`. 
-> 1. Use Replit Auth for security.
-> 2. Create a 'Posts' page with a table to View/Edit/Delete posts.
-> 3. Build a 'New Post' editor using a Server Action to save to the `posts` table in PostgreSQL.
-> 4. Use shadcn/ui for a clean, professional look."
+> "Create the default theme in `/themes/default/` following the contract in `THEMES.md`. It must include `Layout.tsx`, `components/Header.tsx`, `components/HeaderClient.tsx`, `components/Footer.tsx`, `views/HomeView.tsx`, `views/PostView.tsx`, `views/PageView.tsx`, and `design.ts` with all required exports. Then create `src/app/(site)/layout.tsx` to dynamically import the active theme's Layout based on `config.appearance.activeTheme`, validated against `THEME_ALLOWLIST` in `src/lib/theme-registry.ts`."
 
 ---
 
-## Sprint 4: The Plugin System
+## Sprint 3: Admin Dashboard & Auth
+**Goal:** Create the content management interface with NextAuth authentication.
+
+> "Build the Admin Dashboard at `/admin` using NextAuth v5 with Credentials + GitHub + Google OAuth (see `REQUIREMENTS.md §3`). Create a Posts listing page with filter controls (type, status) and sortable columns. Build a post editor with Tiptap Markdown (Visual/Raw toggle), taxonomy pickers for categories and tags, a publish date picker, and an AEO metadata panel. Use Tailwind CSS throughout, matching the admin UI patterns in `src/app/admin/`."
+
+---
+
+## Sprint 4: Plugin System
 **Goal:** Enable modularity using the Hook System.
 
-> "Build a plugin loader that scans the `/plugins` directory. Register plugins listed in `activePlugins`. Then, create a 'Hello World' plugin that uses `hooks.addFilter('theme_footer_text', () => 'Built with ❤️ on ReplPress')`. Finally, add a 'Plugins' toggle page in the Admin Dashboard."
+> "Build a plugin loader in `src/lib/plugin-loader.ts` that initializes plugins listed in `config.modules.activePlugins`. Each plugin exports a `PugmillPlugin` object with an `initialize(hooks, settings)` method. Create a bundled SEO plugin in `/plugins/seo-optimizer/` that injects meta tags via the `theme_head_tags` filter. Add a Plugins admin page at `/admin/settings/plugins` with enable/disable toggles and per-plugin settings forms. See `HOOKS.md` for all available hooks."
 
 ---
 
-## Sprint 5: Media & Assets
-**Goal:** Enable image uploads and management.
+## Sprint 5: Media & Storage
+**Goal:** Enable file uploads through the storage abstraction layer.
 
-> "1. Ensure the `media` table in `schema.ts` is pushed to the DB.
-> 2. Create a Server Action in `src/lib/actions/media.ts` to handle file uploads to the `/public/uploads` directory.
-> 3. Build a 'Media Library' page in the Admin Dashboard to display and delete images.
-> 4. Update the Post Editor to allow selecting a 'Featured Image' from the Media Library."
+> "Implement the `StorageProvider` interface in `src/lib/storage/` with `local.ts` (writes to `/public/uploads/`) and `s3.ts` (AWS S3 / R2 / DO Spaces). Route via `STORAGE_PROVIDER` env var. Create a Server Action in `src/lib/actions/media.ts` for upload and delete. Build a Media Library admin page with grid view, upload form, and per-item delete with confirmation. Connect featured image selection to the post editor."
+
+---
+
+## Sprint 6: Design Token Admin
+**Goal:** Let site owners customize theme tokens without touching code.
+
+> "Build the design token admin at `/admin/design`. Load the active theme's `DESIGN_TOKEN_DEFS` dynamically via `loadThemeDesignDefs()`. Render controls per token type: color picker + hex input for `color`, font selector with live preview for `google-font`, dropdown for `select`. Save as draft via upsert to `theme_design_configs` (partial unique index on `(theme_id, status) WHERE status IN ('draft', 'published')`). Add Publish (atomic archive → promote transaction), Discard (guard: draft must exist), and Preview (`__pugmill_design_preview` cookie) actions. Show inline toast feedback. See `THEMES.md` for the full token contract."
 
 ---
 
 ## Troubleshooting & Rebuilding
-- **DB Mismatch:** "Check `schema.ts` and run `db:push`."
-- **Missing Hooks:** "Ensure the active theme actually calls `doAction` or `applyFilters` in its components."
+
+- **DB schema mismatch (fresh install):** Run `npm run db:push`
+- **DB schema mismatch (existing deployment):** Run `npm run db:migrate`
+- **Theme not loading:** Check `THEME_ALLOWLIST` in `src/lib/theme-registry.ts` — theme ID must be listed
+- **Design tokens not applying:** Verify `buildCssString()` is called in `Layout.tsx` and the result is injected as a `<style>` tag
+- **Missing hooks:** Ensure the active theme calls `doAction` / `applyFilters` in `Layout.tsx`
+- **Plugin settings not saving:** Confirm plugin ID in `config.modules.pluginSettings` matches the plugin's `id` field

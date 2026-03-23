@@ -1,0 +1,7 @@
+{
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "version": "1.0.0",
+  "description": "A brief description of what this plugin does.",
+  "entryPoint": "index.ts"
+}

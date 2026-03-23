@@ -1,0 +1,9 @@
+{
+  "id": "comments",
+  "name": "Comments",
+  "version": "1.0.0",
+  "description": "Threaded comment system with manual or auto-approval moderation.",
+  "author": "Pugmill",
+  "homepage": "https://pugmill.dev/plugins/comments",
+  "pugmillVersion": "^0.1.0"
+}

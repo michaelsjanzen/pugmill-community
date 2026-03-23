@@ -1,0 +1,91 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { posts } from "@/lib/db/schema";
+import { eq, isNull, and } from "drizzle-orm";
+import { getConfig } from "@/lib/config";
+
+// Revalidate every hour — AI crawlers don't need real-time accuracy,
+// and regenerating the full index on every request is expensive at scale.
+export const revalidate = 3600;
+
+/**
+ * GET /llms.txt
+ *
+ * Standard llms.txt for AI engine crawlers (LLM-optimised sitemap).
+ * Lists all top-level published pages and posts.
+ * Child pages are omitted here — each parent has its own /[slug]/llms.txt.
+ *
+ * See: https://llmstxt.org
+ */
+export async function GET() {
+  const config = await getConfig();
+  const siteUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+  const siteName = config.site?.name ?? "Pugmill";
+  const aeo = config.site?.aeoDefaults ?? {};
+  const siteDesc = aeo.summary || (config.site?.description ?? "");
+
+  // Top-level published pages (no parent)
+  const pages = await db
+    .select({ title: posts.title, slug: posts.slug, excerpt: posts.excerpt, type: posts.type })
+    .from(posts)
+    .where(and(eq(posts.published, true), isNull(posts.parentId)))
+    .orderBy(posts.type, posts.createdAt);
+
+  const topPages = pages.filter(p => p.type === "page");
+  const blogPosts = pages.filter(p => p.type === "post");
+
+  const lines: string[] = [
+    `# ${siteName}`,
+    "",
+    `> ${siteDesc}`,
+    "",
+  ];
+
+  if (topPages.length > 0) {
+    lines.push("## Pages", "");
+    for (const p of topPages) {
+      const url = `${siteUrl}/post/${p.slug}`;
+      const desc = p.excerpt ? `: ${p.excerpt}` : "";
+      lines.push(`- [${p.title}](${url})${desc}`);
+      // If this page has children, link to its llms.txt subsection
+      lines.push(`  - AI index: ${siteUrl}/${p.slug}/llms.txt`);
+    }
+    lines.push("");
+  }
+
+  if (blogPosts.length > 0) {
+    lines.push("## Posts", "");
+    for (const p of blogPosts) {
+      const url = `${siteUrl}/post/${p.slug}`;
+      const desc = p.excerpt ? `: ${p.excerpt}` : "";
+      lines.push(`- [${p.title}](${url})${desc}`);
+    }
+    lines.push("");
+  }
+
+  if (aeo.questions?.length) {
+    lines.push("## Frequently Asked Questions", "");
+    for (const qa of aeo.questions) {
+      lines.push(`**Q: ${qa.q}**`);
+      lines.push(`A: ${qa.a}`);
+      lines.push("");
+    }
+  }
+
+  lines.push(
+    "## Full Content",
+    "",
+    `For full post content, see [${siteUrl}/llms-full.txt](${siteUrl}/llms-full.txt)`,
+    "",
+    "## API",
+    "",
+    `REST API: ${siteUrl}/api/posts`,
+  );
+
+  return new NextResponse(lines.join("\n"), {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+    },
+  });
+}

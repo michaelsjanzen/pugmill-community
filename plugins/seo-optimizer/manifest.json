@@ -1,8 +1,0 @@
-{
-  "id": "seo-optimizer",
-  "name": "SEO Meta Manager",
-  "version": "1.0.0",
-  "description": "Automatically generates meta tags for better search visibility.",
-  "author": "ReplPress Core",
-  "entryPoint": "index.ts"
-}

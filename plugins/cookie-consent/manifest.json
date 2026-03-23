@@ -1,0 +1,9 @@
+{
+  "id": "cookie-consent",
+  "name": "Cookie Consent",
+  "version": "0.1.0",
+  "description": "Displays a cookie consent banner at the bottom of every page. Stores the visitor's choice for a configurable number of days.",
+  "author": "Pugmill",
+  "homepage": "https://pugmill.dev/plugins/cookie-consent",
+  "pugmillVersion": "^0.1.0"
+}

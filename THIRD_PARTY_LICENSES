@@ -1,0 +1,165 @@
+Pugmill Third-Party Licenses
+================================
+
+Pugmill is released under the MIT License.
+This file acknowledges the open-source libraries it depends on and their licenses.
+
+No GPL, AGPL, LGPL, or other copyleft licenses are present in this dependency tree.
+
+────────────────────────────────────────────────────────────────────────────────
+APACHE-2.0 LICENSED PACKAGES
+────────────────────────────────────────────────────────────────────────────────
+
+Apache-2.0 is a permissive license. It allows use, modification, and distribution
+under any license (including MIT). Obligation: reproduce copyright notices and, if
+a NOTICE file is included upstream, reproduce it in your distribution. No NOTICE
+files were found in the packages below at the time of this writing.
+
+  drizzle-orm (0.38.4)
+    Copyright (c) 2022 Drizzle Team
+    https://github.com/drizzle-team/drizzle-orm
+    License: https://www.apache.org/licenses/LICENSE-2.0
+
+  @aws-sdk/client-s3 (3.1006.0)
+    Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+    https://github.com/aws/aws-sdk-js-v3
+    License: https://www.apache.org/licenses/LICENSE-2.0
+
+  typescript (5.9.3)
+    Copyright (c) Microsoft Corporation. All rights reserved.
+    https://github.com/microsoft/TypeScript
+    License: https://www.apache.org/licenses/LICENSE-2.0
+
+────────────────────────────────────────────────────────────────────────────────
+BSD-3-CLAUSE LICENSED PACKAGES
+────────────────────────────────────────────────────────────────────────────────
+
+BSD-3-Clause is a permissive license. Requires retention of copyright notice and
+disclaimer. No endorsement of the Pugmill project using the package author's
+name is permitted.
+
+  bcryptjs (3.0.3)
+    Copyright (c) Daniel Wirtz <dcode@dcode.io>
+    https://github.com/dcodeIO/bcrypt.js
+    License: https://opensource.org/licenses/BSD-3-Clause
+
+────────────────────────────────────────────────────────────────────────────────
+BLUE OAK 1.0.0 LICENSED PACKAGES
+────────────────────────────────────────────────────────────────────────────────
+
+Blue Oak 1.0.0 is a modern permissive license designed as a cleaner alternative
+to MIT/ISC. It is compatible with MIT distribution.
+
+  lru-cache (11.2.6)
+    Copyright (c) Isaac Z. Schlueter and Contributors
+    https://github.com/isaacs/node-lru-cache
+    License: https://blueoakcouncil.org/license/1.0.0
+
+────────────────────────────────────────────────────────────────────────────────
+ISC LICENSED PACKAGES
+────────────────────────────────────────────────────────────────────────────────
+
+ISC is functionally equivalent to MIT — same permissions, fewer words.
+
+  next-auth (5.0.0-beta.30)
+    Copyright (c) 2022-2024 Balázs Orbán and contributors
+    https://github.com/nextauthjs/next-auth
+
+  @auth/drizzle-adapter (1.11.1)
+    Copyright (c) 2022-2024 Balázs Orbán and contributors
+    https://github.com/nextauthjs/next-auth
+
+  lucide-react (0.468.0)
+    Copyright (c) 2020 Lucide Contributors
+    https://github.com/lucide-icons/lucide
+
+────────────────────────────────────────────────────────────────────────────────
+MIT LICENSED PACKAGES
+────────────────────────────────────────────────────────────────────────────────
+
+  next (16.1.6)
+    Copyright (c) 2024 Vercel, Inc.
+    https://github.com/vercel/next.js
+
+  react (19.0.0)
+    Copyright (c) Meta Platforms, Inc. and affiliates.
+    https://github.com/facebook/react
+
+  react-dom (19.0.0)
+    Copyright (c) Meta Platforms, Inc. and affiliates.
+    https://github.com/facebook/react
+
+  @tiptap/react (3.20.1)
+  @tiptap/starter-kit (3.20.1)
+  @tiptap/extension-image (3.20.1)
+    Copyright (c) 2021 ueberdosis GmbH
+    https://github.com/ueberdosis/tiptap
+
+  tiptap-markdown (0.9.0)
+    Copyright (c) Focusplan
+    https://github.com/focusplan/tiptap-markdown
+
+  pg / node-postgres (8.20.0)
+    Copyright (c) Brian Carlson and contributors
+    https://github.com/brianc/node-postgres
+
+  react-markdown (10.1.0)
+    Copyright (c) 2015 Espen Hovlandsdal
+    https://github.com/remarkjs/react-markdown
+
+  remark-gfm (4.0.1)
+    Copyright (c) unified collective
+    https://github.com/remarkjs/remark-gfm
+
+  rehype-raw (7.0.0)
+    Copyright (c) rehypejs contributors
+    https://github.com/rehypejs/rehype-raw
+
+  rehype-sanitize (6.0.0)
+    Copyright (c) rehypejs contributors
+    https://github.com/rehypejs/rehype-sanitize
+
+  sanitize-html (2.17.1)
+    Copyright (c) 2013 P'unk Avenue LLC
+    https://github.com/apostrophecms/sanitize-html
+
+  tailwindcss (3.4.19)
+    Copyright (c) Tailwind Labs, Inc.
+    https://github.com/tailwindlabs/tailwindcss
+
+  @tailwindcss/typography (0.5.19)
+    Copyright (c) Tailwind Labs, Inc.
+    https://github.com/tailwindlabs/tailwindcss-typography
+
+  tailwind-merge (2.6.1)
+    Copyright (c) 2021 Dany Castillo
+    https://github.com/dcastil/tailwind-merge
+
+  clsx (2.1.1)
+    Copyright (c) Luke Edwards
+    https://github.com/lukeed/clsx
+
+  zod (3.25.76)
+    Copyright (c) 2020 Colin McDonnell
+    https://github.com/colinhacks/zod
+
+  autoprefixer (10.4.27)
+    Copyright (c) 2013 Andrey Sitnik
+    https://github.com/postcss/autoprefixer
+
+  postcss (8.5.8)
+    Copyright (c) 2013 Andrey Sitnik
+    https://github.com/postcss/postcss
+
+  eslint (9.39.4)
+    Copyright OpenJS Foundation and other contributors
+    https://github.com/eslint/eslint
+
+  husky (9.1.7)
+    Copyright (c) 2021 typicode
+    https://github.com/typicode/husky
+
+────────────────────────────────────────────────────────────────────────────────
+
+Full license texts are available in each package's directory under node_modules/,
+or via https://opensource.org/licenses and each project's linked repository above.

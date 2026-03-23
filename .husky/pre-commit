@@ -1,0 +1,61 @@
+#!/bin/sh
+# Pugmill Pre-commit Security Hook
+# Scans staged files for potential secrets before allowing a commit.
+
+echo "🔍 Pugmill: Scanning for secrets in staged files..."
+
+# Get list of staged files (not deleted)
+STAGED=$(git diff --cached --name-only --diff-filter=d)
+
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+FOUND=0
+
+# Patterns that suggest a hardcoded secret
+# Each pattern: description|regex
+check_pattern() {
+  DESCRIPTION="$1"
+  PATTERN="$2"
+
+  MATCHES=$(echo "$STAGED" | xargs grep -lE "$PATTERN" 2>/dev/null | grep -v ".env.example" | grep -v "SECURITY.md" | grep -v "env-check.ts" | grep -v "validate-env.ts" | grep -v "pre-commit" | grep -v "\.md$")
+
+  if [ -n "$MATCHES" ]; then
+    echo ""
+    echo "  ❌ Potential $DESCRIPTION found in:"
+    echo "$MATCHES" | sed 's/^/     /'
+    echo "  Pattern: $PATTERN"
+    FOUND=1
+  fi
+}
+
+# Check for .env files being committed
+ENV_FILES=$(echo "$STAGED" | grep -E "^\.env(\..+)?$" | grep -v ".env.example")
+if [ -n "$ENV_FILES" ]; then
+  echo ""
+  echo "  ❌ Attempting to commit .env file(s):"
+  echo "$ENV_FILES" | sed 's/^/     /'
+  FOUND=1
+fi
+
+# Secret patterns
+check_pattern "hardcoded password"        "(password|passwd|pwd)\s*[:=]\s*['\"][^'\"]{6,}['\"]"
+check_pattern "hardcoded secret/token"    "(secret|token|api_key|apikey)\s*[:=]\s*['\"][A-Za-z0-9+/=_-]{16,}['\"]"
+check_pattern "hardcoded private key"     "-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----"
+check_pattern "AWS access key"            "AKIA[0-9A-Z]{16}"
+check_pattern "hardcoded connection string" "postgresql://[^:]+:[^@]+@"
+check_pattern "hardcoded JWT secret"      "NEXTAUTH_SECRET\s*=\s*['\"][^'\"]{8,}['\"]"
+
+if [ "$FOUND" -eq 1 ]; then
+  echo ""
+  echo "  ⛔ Commit blocked. Review the above and:"
+  echo "     • Move secrets to .env.local (gitignored)"
+  echo "     • Use process.env.VARIABLE_NAME in code"
+  echo "     • See SECURITY.md for guidance"
+  echo ""
+  exit 1
+fi
+
+echo "  ✅ No secrets detected. Proceeding with commit."
+exit 0

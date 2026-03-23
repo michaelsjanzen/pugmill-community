@@ -1,0 +1,244 @@
+"use server";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { posts, postCategories, postTags } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { getCurrentUser } from "@/lib/get-current-user";
+import { hooks } from "@/lib/hooks";
+import type { PostPayload } from "@/lib/hook-catalogue";
+import { auditLog } from "@/lib/audit-log";
+import { z } from "zod";
+import { aeoSchema, parseAeoMetadata } from "@/lib/aeo";
+
+const postSchema = z.object({
+  type: z.enum(["post", "page"]).default("post"),
+  title: z.string().min(1, "Title is required").max(255),
+  slug: z.string().max(255).regex(/^[a-z0-9-]*$/, "Slug can only contain lowercase letters, numbers, and hyphens").optional(),
+  content: z.string().min(1, "Content is required").max(200000),
+  excerpt: z.string().max(500).optional(),
+  publishAt: z.string().optional(),
+  parentId: z.number().int().positive().nullable().optional(),
+  aeoMetadata: aeoSchema,
+});
+
+function resolvePublishState(
+  publishAt?: string,
+  intent?: string | null,
+): { published: boolean; publishedAt: Date | null } {
+  // Explicit draft intent — always save unpublished with no date
+  if (intent === "draft") return { published: false, publishedAt: null };
+
+  // No date supplied + publish intent → publish immediately
+  if (!publishAt || publishAt.trim() === "") {
+    if (intent === "publish") return { published: true, publishedAt: new Date() };
+    return { published: false, publishedAt: null };
+  }
+
+  const date = new Date(publishAt);
+  if (isNaN(date.getTime())) return { published: false, publishedAt: null };
+  const published = date <= new Date();
+  return { published, publishedAt: date };
+}
+
+/** Safely parse a FormData integer field — returns null for missing, empty, or non-finite values. */
+function parseIntOrNull(value: FormDataEntryValue | string | null): number | null {
+  if (!value) return null;
+  const n = parseInt(value as string, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+async function requireAdminOrEditor() {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Unauthorized: not logged in");
+  if (user.role !== "admin" && user.role !== "editor") throw new Error("Unauthorized: insufficient role");
+  return user;
+}
+
+/**
+ * Editors may only set parentId to a post they authored.
+ * Admins are unrestricted. Pass userId only when role === "editor".
+ */
+async function assertParentIdAuthorized(parentId: number | null, userId: string): Promise<void> {
+  if (parentId === null) return;
+  const parent = await db.select({ authorId: posts.authorId })
+    .from(posts)
+    .where(eq(posts.id, parentId));
+  if (!parent[0] || parent[0].authorId !== userId) {
+    throw new Error("Editors can only nest under their own posts.");
+  }
+}
+
+
+export async function createPost(formData: FormData) {
+  const user = await requireAdminOrEditor();
+
+  const raw = {
+    type: (formData.get("type") as string) || "post",
+    title: formData.get("title") as string,
+    slug: (formData.get("slug") as string) || undefined,
+    content: formData.get("content") as string,
+    excerpt: (formData.get("excerpt") as string) || undefined,
+    publishAt: (formData.get("publishAt") as string) || undefined,
+    parentId: parseIntOrNull(formData.get("parentId")),
+    aeoMetadata: parseAeoMetadata(formData.get("aeoMetadata") as string | null) ?? undefined,
+  };
+
+  const result = postSchema.safeParse(raw);
+  if (!result.success) {
+    throw new Error(`Validation failed: ${result.error.issues.map(i => i.message).join(", ")}`);
+  }
+
+  if (user.role === "editor") {
+    await assertParentIdAuthorized(result.data.parentId ?? null, user.id);
+  }
+
+  const slug = result.data.slug || result.data.title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  const intent = formData.get("intent") as string | null;
+  const { published, publishedAt } = resolvePublishState(result.data.publishAt, intent);
+
+  const featuredImage = parseIntOrNull(formData.get("featuredImage"));
+  const featured = formData.get("featured") === "1";
+
+  let newPost: (typeof posts.$inferSelect)[];
+  try {
+    newPost = await db.insert(posts).values({
+      type: result.data.type,
+      title: result.data.title,
+      slug,
+      content: result.data.content,
+      excerpt: result.data.excerpt,
+      published,
+      featured,
+      publishedAt,
+      parentId: result.data.parentId ?? null,
+      aeoMetadata: result.data.aeoMetadata ?? null,
+      featuredImage: featuredImage ?? null,
+      authorId: user.id,
+    } as typeof posts.$inferInsert).returning();
+  } catch (err) {
+    if ((err as { code?: string }).code === "23505") {
+      throw new Error(`A post with the slug "${slug}" already exists. Please use a different title or specify a unique slug.`);
+    }
+    throw err;
+  }
+
+  const categoryIds = formData.getAll("categories").map(id => parseInt(id as string, 10)).filter(id => !isNaN(id));
+  if (categoryIds.length > 0) {
+    await db.insert(postCategories).values(categoryIds.map(categoryId => ({ postId: newPost[0].id, categoryId })));
+  }
+
+  const tagIds = formData.getAll("tags").map(id => parseInt(id as string, 10)).filter(id => !isNaN(id));
+  if (tagIds.length > 0) {
+    await db.insert(postTags).values(tagIds.map(tagId => ({ postId: newPost[0].id, tagId })));
+  }
+
+  auditLog({ action: "post.create", userId: user.id, resourceId: newPost[0].id, detail: `slug: ${slug}` });
+  await hooks.doAction("post:after-save", { post: newPost[0] as PostPayload });
+  revalidatePath("/admin/posts");
+  revalidatePath("/");
+
+  redirect("/admin/posts");
+}
+
+export async function updatePost(id: number, formData: FormData) {
+  const user = await requireAdminOrEditor();
+
+  if (user.role === "editor") {
+    const existing = await db.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, id));
+    if (!existing[0] || existing[0].authorId !== user.id) {
+      throw new Error("Unauthorized: editors can only edit their own posts");
+    }
+  }
+
+  const raw = {
+    type: (formData.get("type") as string) || "post",
+    title: formData.get("title") as string,
+    slug: (formData.get("slug") as string) || undefined,
+    content: formData.get("content") as string,
+    excerpt: (formData.get("excerpt") as string) || undefined,
+    publishAt: (formData.get("publishAt") as string) || undefined,
+    parentId: parseIntOrNull(formData.get("parentId")),
+    aeoMetadata: parseAeoMetadata(formData.get("aeoMetadata") as string | null) ?? undefined,
+  };
+
+  const result = postSchema.safeParse(raw);
+  if (!result.success) {
+    throw new Error(`Validation failed: ${result.error.issues.map(i => i.message).join(", ")}`);
+  }
+
+  if (user.role === "editor") {
+    await assertParentIdAuthorized(result.data.parentId ?? null, user.id);
+  }
+
+  const slug = result.data.slug || result.data.title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  const intent = formData.get("intent") as string | null;
+  const { published, publishedAt } = resolvePublishState(result.data.publishAt, intent);
+
+  const featuredImage = parseIntOrNull(formData.get("featuredImage"));
+  const featured = formData.get("featured") === "1";
+
+  let updated: (typeof posts.$inferSelect)[];
+  try {
+    updated = await db.update(posts)
+      .set({
+        type: result.data.type,
+        title: result.data.title,
+        slug,
+        content: result.data.content,
+        excerpt: result.data.excerpt,
+        published,
+        featured,
+        publishedAt,
+        parentId: result.data.parentId ?? null,
+        aeoMetadata: result.data.aeoMetadata ?? null,
+        featuredImage: featuredImage ?? null,
+        updatedAt: new Date(),
+      } as Partial<typeof posts.$inferInsert>)
+      .where(eq(posts.id, id))
+      .returning();
+  } catch (err) {
+    if ((err as { code?: string }).code === "23505") {
+      throw new Error(`A post with the slug "${slug}" already exists. Please choose a unique slug.`);
+    }
+    throw err;
+  }
+
+  await db.delete(postCategories).where(eq(postCategories.postId, id));
+  const categoryIds = formData.getAll("categories").map(cid => parseInt(cid as string)).filter(cid => !isNaN(cid));
+  if (categoryIds.length > 0) {
+    await db.insert(postCategories).values(categoryIds.map(categoryId => ({ postId: id, categoryId })));
+  }
+
+  await db.delete(postTags).where(eq(postTags.postId, id));
+  const tagIds = formData.getAll("tags").map(tid => parseInt(tid as string)).filter(tid => !isNaN(tid));
+  if (tagIds.length > 0) {
+    await db.insert(postTags).values(tagIds.map(tagId => ({ postId: id, tagId })));
+  }
+
+  auditLog({ action: "post.update", userId: user.id, resourceId: id });
+  await hooks.doAction("post:after-save", { post: updated[0] as PostPayload });
+  revalidatePath("/admin/posts");
+  revalidatePath("/");
+
+  redirect("/admin/posts");
+}
+
+export async function deletePost(id: number) {
+  const user = await requireAdminOrEditor();
+
+  if (user.role === "editor") {
+    const existing = await db.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, id));
+    if (!existing[0] || existing[0].authorId !== user.id) {
+      throw new Error("Unauthorized: editors can only delete their own posts");
+    }
+  }
+
+  await hooks.doAction("post:before-delete", { postId: id });
+  await db.delete(posts).where(eq(posts.id, id));
+  auditLog({ action: "post.delete", userId: user.id, resourceId: id });
+  revalidatePath("/admin/posts");
+  revalidatePath("/");
+
+}
+

@@ -1,24 +1,38 @@
-import { ReplitAuth } from "@/lib/replit-auth"; // Wrapper for Replit Auth headers
-import Sidebar from "@/components/admin/Sidebar";
-import TopBar from "@/components/admin/TopBar";
+import { getCurrentUser } from "@/lib/get-current-user";
+import { getConfig } from "@/lib/config";
+import { getAllPlugins } from "@/lib/plugin-registry";
+import { getUnreadCountsByPlugin } from "@/lib/notifications";
+import { loadPlugins } from "@/lib/plugin-loader";
+import AdminShell from "@/components/admin/AdminShell";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  // Ensure only the Repl owner or authorized users can access
-  const user = await ReplitAuth.getCurrentUser();
-  
+  const user = await getCurrentUser();
+
+  // Middleware handles the redirect for all non-login admin routes.
+  // This fallback covers the login page itself (no AdminShell needed)
+  // and provides defence-in-depth if middleware is bypassed.
   if (!user) {
-    return <div className="p-20 text-center">Access Denied. Please log in via Replit.</div>;
+    return <>{children}</>;
   }
 
+  const [config, badges] = await Promise.all([
+    getConfig(),
+    getUnreadCountsByPlugin().catch(() => ({} as Record<string, number>)),
+    loadPlugins(),
+  ]);
+
+  const activePlugins = getAllPlugins(
+    config.modules.activePlugins,
+    config.modules.pluginSettings ?? {}
+  ).filter(p => p.isActive);
+
   return (
-    <div className="flex h-screen bg-slate-50">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar user={user} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AdminShell
+      user={{ username: user.name || user.email || "Account", role: user.role }}
+      plugins={activePlugins.map(p => ({ id: p.id, name: p.name, actionHref: p.actionHref }))}
+      badges={badges}
+    >
+      {children}
+    </AdminShell>
   );
 }

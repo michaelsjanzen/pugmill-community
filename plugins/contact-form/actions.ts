@@ -1,0 +1,146 @@
+"use server";
+
+import { db } from "../../src/lib/db";
+import { getClientIp } from "../../src/lib/get-client-ip";
+import { z } from "zod";
+import { getConfig } from "../../src/lib/config";
+import { loadPlugins } from "../../src/lib/plugin-loader";
+import { pluginContactFormSubmissions } from "./schema";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { getCurrentUser } from "../../src/lib/get-current-user";
+import { createNotification, deleteNotificationByReplaceKey } from "../../src/lib/notifications";
+import { getUnreadCount } from "./db";
+import { submissionLimiter, SUBMISSION_RATE_LIMIT } from "../../src/lib/rate-limit";
+import { auditLog } from "../../src/lib/audit-log";
+
+async function requireAdmin() {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Unauthorized");
+  if (user.role !== "admin") throw new Error("Forbidden: admin only");
+  return user;
+}
+
+// ─── Public: submit the contact form ──────────────────────────────────────────
+
+export interface ContactFormState {
+  status: "idle" | "success" | "error";
+  message: string;
+}
+
+export async function submitContactForm(
+  _prev: ContactFormState,
+  formData: FormData
+): Promise<ContactFormState> {
+  // Server actions run without a layout render, so loadPlugins() may not have
+  // been called yet. Idempotent — no-op if already loaded.
+  await loadPlugins();
+
+  const config = await getConfig();
+  if (!config.modules.activePlugins.includes("contact-form")) {
+    return { status: "error", message: "Contact form is not enabled." };
+  }
+
+  const settings = config.modules.pluginSettings?.["contact-form"] ?? {};
+  const requirePhone = settings.requirePhone === true;
+  const successMessage =
+    (settings.successMessage as string) || "Thank you for your message. We'll be in touch soon.";
+
+  // Rate limit by IP — max 5 submissions per 10 minutes.
+  const headersList = await headers();
+  const ip = getClientIp(headersList);
+  const { success: allowed } = submissionLimiter.check(`contact:${ip}`, SUBMISSION_RATE_LIMIT);
+  if (!allowed) {
+    return { status: "error", message: "Too many submissions. Please try again later." };
+  }
+
+  // Honeypot — hidden field that real users never see or fill.
+  // Bots that auto-fill all inputs will populate it; we silently succeed so
+  // they don't know they were filtered.
+  const hp = (formData.get("_hp") as string) ?? "";
+  if (hp.length > 0) {
+    return { status: "success", message: successMessage };
+  }
+
+  const name = (formData.get("name") as string)?.trim() ?? "";
+  const email = (formData.get("email") as string)?.trim() ?? "";
+  const phone = (formData.get("phone") as string)?.trim() || null;
+  const message = (formData.get("message") as string)?.trim() ?? "";
+
+  if (!name) return { status: "error", message: "Name is required." };
+  if (!email) return { status: "error", message: "Email address is required." };
+  if (!z.string().email().safeParse(email).success) {
+    return { status: "error", message: "Please enter a valid email address." };
+  }
+  if (requirePhone && !phone) return { status: "error", message: "Phone number is required." };
+  if (!message) return { status: "error", message: "Message is required." };
+  if (message.length > 5000) {
+    return { status: "error", message: "Message is too long (max 5000 characters)." };
+  }
+
+  try {
+    await db.insert(pluginContactFormSubmissions).values({
+      name,
+      email,
+      phone,
+      message,
+    } as typeof pluginContactFormSubmissions.$inferInsert);
+  } catch (err) {
+    console.error("[contact-form] Failed to save submission:", err);
+    return { status: "error", message: "Could not send your message. Please try again." };
+  }
+
+  // Keep the unread notification badge current.
+  const unread = await getUnreadCount();
+  await createNotification({
+    pluginId: "contact-form",
+    message: `${unread} unread contact form submission${unread === 1 ? "" : "s"}.`,
+    href: "/admin/contact",
+    replaceKey: "contact-form:unread",
+    itemCount: unread,
+  });
+
+  return { status: "success", message: successMessage };
+}
+
+// ─── Admin: mark a submission as read ─────────────────────────────────────────
+
+export async function markSubmissionRead(id: number): Promise<void> {
+  await requireAdmin();
+  await db
+    .update(pluginContactFormSubmissions)
+    .set({ read: true } as Partial<typeof pluginContactFormSubmissions.$inferInsert>)
+    .where(eq(pluginContactFormSubmissions.id, id));
+  await syncUnreadNotification();
+  revalidatePath("/admin/contact");
+}
+
+// ─── Admin: delete a submission ────────────────────────────────────────────────
+
+export async function deleteSubmission(id: number): Promise<void> {
+  const user = await requireAdmin();
+  await db
+    .delete(pluginContactFormSubmissions)
+    .where(eq(pluginContactFormSubmissions.id, id));
+  await syncUnreadNotification();
+  auditLog({ action: "contact.submission_delete", userId: user.id, detail: `submissionId=${id}` });
+  revalidatePath("/admin/contact");
+}
+
+// ─── Internal helpers ──────────────────────────────────────────────────────────
+
+async function syncUnreadNotification(): Promise<void> {
+  const unread = await getUnreadCount();
+  if (unread > 0) {
+    await createNotification({
+      pluginId: "contact-form",
+      message: `${unread} unread contact form submission${unread === 1 ? "" : "s"}.`,
+      href: "/admin/contact",
+      replaceKey: "contact-form:unread",
+      itemCount: unread,
+    });
+  } else {
+    await deleteNotificationByReplaceKey("contact-form", "contact-form:unread");
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "your-theme-id",
+  "name": "Your Theme Name",
+  "version": "1.0.0",
+  "description": "A one-sentence description of the theme's personality and use case.",
+  "author": "Your Name or Studio",
+  "authorUrl": "https://yoursite.com",
+  "previewUrl": "https://preview.yourtheme.com",
+  "tags": ["minimal", "blog"],
+  "compatibleWith": ">=0.1.0"
+}
