@@ -13,7 +13,7 @@ const topNavItems = [
   { label: "Dashboard", path: "/admin", exact: true },
   { label: "Notifications", path: "/admin/notifications" },
   { label: "Content", path: "/admin/posts" },
-  { label: "Design", path: "/admin/themes" },
+  { label: "Design", path: "/admin/design" },
   { label: "Plugins", path: "/admin/plugins" },
   { label: "Settings", path: "/admin/settings" },
 ];
