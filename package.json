@@ -11,11 +11,12 @@
     "lint": "next lint",
     "setup": "npx tsx scripts/setup.ts",
     "db:push": "drizzle-kit push --force",
+    "db:init": "npm run db:push && npm run setup",
     "db:migrate": "npx tsx scripts/migrate-001-design-config-upsert.ts && npx tsx scripts/migrate-002-posts-indexes.ts && npx tsx scripts/migrate-003-ai-usage.ts",
     "db:studio": "drizzle-kit studio",
     "env:check": "npx tsx scripts/env-check.ts",
     "predev": "npx tsx scripts/env-check.ts",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",

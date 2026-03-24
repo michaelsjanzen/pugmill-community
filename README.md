@@ -100,18 +100,17 @@ ADMIN_PASSWORD=your-admin-password
 
 Optional variables (OAuth, S3, etc.) are documented in [REQUIREMENTS.md](./REQUIREMENTS.md#environment-variables).
 
-### 3. Push the database schema
+### 3. Initialise the database and create your admin account
 
 ```bash
-npm run db:push        # fresh install — creates all tables
-# OR for existing deployments:
-npm run db:migrate     # incremental migrations (safe to re-run)
+npm run db:init
 ```
 
-### 4. Seed the admin user
+This pushes the schema and runs the setup script in one step. If `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_NAME` are set in your environment the setup runs non-interactively (ideal for Replit, CI, or any automated deployment). Otherwise it prompts you.
 
+For **existing deployments** after pulling new changes:
 ```bash
-npm run setup
+npm run db:migrate     # incremental migrations (safe to re-run)
 ```
 
 ### 5. Start the dev server
@@ -369,7 +368,8 @@ See [`THEMES.md`](./THEMES.md) for the full contract and [`/themes/_template/`](
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
 | `npm run setup` | Seed admin user (first run) |
-| `npm run db:push` | Push Drizzle schema to database (fresh installs — creates all tables) |
+| `npm run db:init` | Push schema + seed admin account in one step (fresh installs; non-interactive if `ADMIN_EMAIL`/`ADMIN_PASSWORD` env vars are set) |
+| `npm run db:push` | Push Drizzle schema only (no admin seed) |
 | `npm run db:migrate` | Run incremental migration scripts in order (existing installs after schema updates; safe to re-run) |
 | `npm run db:studio` | Open Drizzle Studio (visual DB browser) |
 | `npm run env:check` | Validate required environment variables |

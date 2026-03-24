@@ -197,12 +197,13 @@ Pugmill uses environment variables for all secrets. See `.env.example` for the f
 
 #### First-Run Setup
 ```bash
-npm install
-npm run db:push         # Create database tables (fresh install)
-npm run setup           # Create first admin account
+npm install             # husky || true — safe in CI/Replit/Docker
+npm run db:init         # db:push + setup in one step
 npm run dev             # Start dev server
 ```
 Then visit `/admin/login`.
+
+`npm run setup` (called by `db:init`) reads `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_NAME` from the environment and runs non-interactively when they are set — no prompts. It is idempotent: if an admin account already exists it exits cleanly without error.
 
 For **existing deployments** after a schema update:
 ```bash

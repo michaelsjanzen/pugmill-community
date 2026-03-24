@@ -671,10 +671,9 @@ Each admin user has an `authorVoice` text field (Admin → My Profile). This fre
 ## 17. First-Run Setup
 
 ```bash
-cp .env.example .env.local      # fill in DATABASE_URL and NEXTAUTH_SECRET at minimum
-npm install
-npm run db:push                 # create all database tables (fresh install)
-npm run setup                   # create the first admin account + seed config
+cp .env.example .env.local      # fill in DATABASE_URL, NEXTAUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD at minimum
+npm install                     # husky || true — safe in CI/Replit/Docker
+npm run db:init                 # db:push + setup in one step (non-interactive if ADMIN_* env vars set)
 npm run dev                     # start development server at http://localhost:3000
 ```
 
@@ -682,6 +681,8 @@ For **existing deployments** after pulling new changes:
 ```bash
 npm run db:migrate              # run incremental migration scripts (safe to re-run)
 ```
+
+`npm run setup` (called by `db:init`) is idempotent — exits cleanly if an admin already exists.
 
 Visit `/admin/login` to sign in.
 
