@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import { Markdown } from "tiptap-markdown";
 import { uploadMedia } from "@/lib/actions/media";
+import type { NodeViewProps } from "@tiptap/react";
 
 export interface MarkdownEditorHandle {
   setContent: (value: string) => void;
@@ -24,6 +25,39 @@ interface Props {
   postTitle?: string;
   onMediaUploaded?: (item: MediaItem) => void;
 }
+
+// ── Deletable image node view ─────────────────────────────────────────────────
+// Wraps each image in a block container with a hover-visible delete button so
+// users can remove images in the visual editor without switching to Markdown.
+
+function ImageNodeView({ node, deleteNode }: NodeViewProps) {
+  return (
+    <NodeViewWrapper as="div" className="relative group my-2 inline-block max-w-full">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={node.attrs.src as string}
+        alt={(node.attrs.alt as string) ?? ""}
+        className="max-w-full rounded"
+      />
+      <button
+        type="button"
+        onMouseDown={(e) => { e.preventDefault(); deleteNode(); }}
+        className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+        title="Remove image"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </NodeViewWrapper>
+  );
+}
+
+const DeletableImage = Image.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(ImageNodeView);
+  },
+});
 
 function normalizeImageBlocks(md: string): string {
   return md
@@ -83,7 +117,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function Markdown
     immediatelyRender: false,
     extensions: [
       StarterKit,
-      Image,
+      DeletableImage,
       Markdown.configure({ transformPastedText: true, transformCopiedText: true }),
     ],
     content: defaultValue,
