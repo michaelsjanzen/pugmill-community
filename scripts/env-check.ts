@@ -153,13 +153,12 @@ function runChecks() {
   if (errors.length > 0) {
     console.log("\n❌ Errors:");
     for (const e of errors) console.log(`  • ${e}`);
-    console.log("\n  See SECURITY.md and .env.example for guidance.\n");
-
-    if (isProd) {
-      process.exit(1);
-    } else {
-      console.log("  ⚠️  Continuing in development mode despite errors.\n");
-    }
+    console.log("\n  See SECURITY.md and .env.example for guidance.");
+    console.log("  ⚠️  Set the missing variables before starting the server.\n");
+    // Always exit 0 here — the authoritative runtime guard is validateEnv()
+    // in src/lib/validate-env.ts (called in src/app/layout.tsx).
+    // Exiting 1 in predev causes issues in Replit/CI where NODE_ENV=production
+    // is set before secrets are configured.
   } else {
     console.log(`\n  ✅ All ${passed} required variables are set.\n`);
   }
