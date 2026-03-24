@@ -127,8 +127,17 @@ async function main() {
 
   const existing = await db.select().from(adminUsers).limit(1);
 
+  const { getConfig }          = await import("../src/lib/config");
+  const { seedDefaultContent } = await import("../seeds/default-content");
+
   if (existing.length > 0) {
-    console.log("  Admin account already exists — skipping.\n");
+    console.log("  Admin account already exists.");
+
+    // Still ensure config and content are seeded (safe if already done)
+    await getConfig();
+    const [admin] = await db.select().from(adminUsers).limit(1);
+    await seedDefaultContent(admin.id);
+    console.log("  Config and default content verified.\n");
   } else {
     const email = process.env.ADMIN_EMAIL || "admin@pugmill.local";
     const name  = process.env.ADMIN_NAME  || "Admin";
@@ -161,17 +170,15 @@ async function main() {
     } as typeof adminUsers.$inferInsert);
 
     // Seed site config and default content
-    const { getConfig }          = await import("../src/lib/config");
-    const { seedDefaultContent } = await import("../seeds/default-content");
     await getConfig();
     const [admin] = await db.select().from(adminUsers).limit(1);
     await seedDefaultContent(admin.id);
 
     // Print credentials
-    const maxLen  = Math.max(email.length, password.length, 34);
-    const w       = maxLen + 2; // inner padding
-    const line    = "─".repeat(w + 2);
-    const pad     = (s: string) => s + " ".repeat(w + 2 - s.length);
+    const maxLen = Math.max(email.length, password.length, 34);
+    const w      = maxLen + 2;
+    const line   = "─".repeat(w + 2);
+    const pad    = (s: string) => s + " ".repeat(w + 2 - s.length);
 
     console.log(`\n  ┌${line}┐`);
     console.log(`  │ ${pad("Admin credentials " + passwordNote)} │`);
