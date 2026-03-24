@@ -1,7 +1,9 @@
 import { db } from "@/lib/db";
-import { posts, media, adminUsers, sessions } from "@/lib/db/schema";
-import { sql, gte, isNotNull, notInArray } from "drizzle-orm";
+import { posts, media, adminUsers, sessions, themeDesignConfigs } from "@/lib/db/schema";
+import { sql, gte, isNotNull, notInArray, eq } from "drizzle-orm";
+import { getConfig } from "@/lib/config";
 import DashboardCharts from "@/components/admin/DashboardCharts";
+import GettingStartedCard from "@/components/admin/GettingStartedCard";
 
 function buildMonthlyBuckets(n: number): { key: string; label: string }[] {
   const result: { key: string; label: string }[] = [];
@@ -26,8 +28,9 @@ export default async function AdminDashboard() {
     .from(posts)
     .where(isNotNull(posts.featuredImage));
 
-  const [counts, totalMediaRows, unusedMediaRows, monthlyRaw, allUsers, lastActiveSessions] =
+  const [config, counts, totalMediaRows, unusedMediaRows, monthlyRaw, allUsers, lastActiveSessions, publishedDesign, publishedPost, anyAuthorVoice] =
     await Promise.all([
+      getConfig(),
       db
         .select({
           type: posts.type,
@@ -71,6 +74,24 @@ export default async function AdminDashboard() {
         })
         .from(sessions)
         .groupBy(sessions.userId),
+
+      // Onboarding: has a published design config (design customized)?
+      db.select({ id: themeDesignConfigs.id })
+        .from(themeDesignConfigs)
+        .where(eq(themeDesignConfigs.status, "published"))
+        .limit(1),
+
+      // Onboarding: has at least one published post?
+      db.select({ id: posts.id })
+        .from(posts)
+        .where(sql`${posts.type} = 'post' AND ${posts.published} = true`)
+        .limit(1),
+
+      // Onboarding: has any admin set their author voice?
+      db.select({ authorVoice: adminUsers.authorVoice })
+        .from(adminUsers)
+        .where(isNotNull(adminUsers.authorVoice))
+        .limit(1),
     ]);
 
   const buckets = buildMonthlyBuckets(12);
@@ -113,9 +134,46 @@ export default async function AdminDashboard() {
     lastActive: sessionMap.get(u.id) ?? null,
   }));
 
+  // Onboarding steps
+  const onboardingSteps = [
+    {
+      label: "Set your site identity",
+      description: "Add your site name, URL, and description in Settings.",
+      done: config.site.name !== "My Pugmill Site" && config.site.name.trim() !== "",
+      href: "/admin/settings",
+    },
+    {
+      label: "Configure an AI provider",
+      description: "Connect Anthropic, OpenAI, or Gemini to unlock AI-powered features.",
+      done: config.ai.provider !== null,
+      href: "/admin/settings#ai",
+    },
+    {
+      label: "Set your author voice",
+      description: "Add a writing style description so AI suggestions match your tone.",
+      done: anyAuthorVoice.length > 0,
+      href: "/admin/users",
+    },
+    {
+      label: "Customize your design",
+      description: "Adjust colors, fonts, and layout to make Pugmill your own.",
+      done: publishedDesign.length > 0,
+      href: "/admin/design",
+    },
+    {
+      label: "Publish your first post",
+      description: "Create and publish a post to put your site on the map.",
+      done: publishedPost.length > 0,
+      href: "/admin/posts/new",
+    },
+  ];
+  const allStepsDone = onboardingSteps.every(s => s.done);
+  const showOnboarding = !config.system.onboardingDismissed && !allStepsDone;
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-zinc-800">Dashboard</h2>
+      {showOnboarding && <GettingStartedCard steps={onboardingSteps} />}
       <DashboardCharts
         monthly={monthly}
         postStatus={postStatus}

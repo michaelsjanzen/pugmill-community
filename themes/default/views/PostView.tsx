@@ -183,41 +183,21 @@ export default function PostView({
 
       {/* Article header */}
       <header className="space-y-4 pb-8 border-b border-[var(--color-border)]">
-        {/* Category pills */}
-        {categories.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {categories.map(cat => (
-              <Link
-                key={cat.slug}
-                href={`/category/${cat.slug}`}
-                className="text-xs font-medium px-2.5 py-1 rounded-full bg-[var(--color-surface)] text-[var(--color-accent)] border border-[var(--color-border)] hover:opacity-80 transition"
-              >
-                {cat.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--color-foreground)] leading-tight">
           {title}
         </h1>
 
-        {excerpt && (
-          <p className="text-lg text-[var(--color-muted)] leading-relaxed">{excerpt}</p>
+        {(excerpt || aeoMetadata?.summary) && (
+          <p className="text-lg text-[var(--color-muted)] leading-relaxed">
+            {excerpt || aeoMetadata?.summary}
+          </p>
         )}
 
-        <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-muted)]">
-          {formatDate(publishedAt) && <time>{formatDate(publishedAt)}</time>}
-          {tags.map(tag => (
-            <Link
-              key={tag.slug}
-              href={`/tag/${tag.slug}`}
-              className="px-2 py-0.5 rounded-full bg-[var(--color-surface)] text-[var(--color-muted)] hover:opacity-80 transition"
-            >
-              {tag.name}
-            </Link>
-          ))}
-        </div>
+        {formatDate(publishedAt) && (
+          <div className="text-xs text-[var(--color-muted)]">
+            <time dateTime={publishedAt?.toISOString()}>{formatDate(publishedAt)}</time>
+          </div>
+        )}
       </header>
 
       {/* Hero image */}
@@ -250,8 +230,8 @@ export default function PostView({
             </h2>
           </div>
           <div className="divide-y divide-[var(--color-border)]">
-            {questions.map((item) => (
-              <details key={item.q} className="group">
+            {questions.map((item, i) => (
+              <details key={item.q} className="group" open={i === 0}>
                 <summary className="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer list-none select-none">
                   <span className="text-sm font-medium text-[var(--color-foreground)] group-open:text-[var(--color-accent)] transition-colors">
                     {item.q}
@@ -278,6 +258,30 @@ export default function PostView({
       {footerWidgets && (
         <div className="border-t border-[var(--color-border)] pt-8">
           {footerWidgets}
+        </div>
+      )}
+
+      {/* Categories and tags */}
+      {(categories.length > 0 || tags.length > 0) && (
+        <div className="flex flex-wrap gap-1.5">
+          {categories.map(cat => (
+            <Link
+              key={cat.slug}
+              href={`/category/${cat.slug}`}
+              className="text-xs font-medium px-2.5 py-1 rounded-full bg-[var(--color-surface)] text-[var(--color-accent)] border border-[var(--color-border)] hover:opacity-80 transition"
+            >
+              {cat.name}
+            </Link>
+          ))}
+          {tags.map(tag => (
+            <Link
+              key={tag.slug}
+              href={`/tag/${tag.slug}`}
+              className="text-xs px-2.5 py-1 rounded-full bg-[var(--color-surface)] text-[var(--color-muted)] border border-[var(--color-border)] hover:opacity-80 transition"
+            >
+              {tag.name}
+            </Link>
+          ))}
         </div>
       )}
 

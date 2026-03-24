@@ -6,6 +6,13 @@ import rehypeSlug from "rehype-slug";
 import Link from "next/link";
 import type { ArticleLayoutConfig } from "../design";
 
+function safeJson(obj: object): string {
+  return JSON.stringify(obj)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
+}
+
 export interface Breadcrumb {
   title: string;
   slug: string;
@@ -19,6 +26,7 @@ export interface PageViewProps {
   siblingPages?: { title: string; slug: string }[];
   /** Rendered widget area for the sidebar slot — replaces the default sibling/parent sidebar. */
   sidebarContent?: React.ReactNode;
+  canonicalUrl?: string;
 }
 
 const contentWidthClass: Record<string, string> = {
@@ -45,13 +53,52 @@ export default function PageView({
   layoutConfig,
   siblingPages,
   sidebarContent,
+  canonicalUrl,
 }: PageViewProps) {
   const contentWidth = layoutConfig?.contentWidth ?? "narrow";
   const sidebar = layoutConfig?.sidebar ?? "none";
   const widthClass = contentWidthClass[contentWidth] ?? contentWidthClass.narrow;
 
+  // ── JSON-LD ────────────────────────────────────────────────────────────────
+
+  const webPageSchema = canonicalUrl
+    ? safeJson({
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        name: title,
+        url: canonicalUrl,
+      })
+    : null;
+
+  // BreadcrumbList: Home → ...ancestors → current page
+  // canonicalUrl is of the form https://example.com/post/[slug]; strip /post/[slug] to get the site root.
+  const siteRoot = canonicalUrl ? canonicalUrl.replace(/\/post\/[^/]+$/, "") : "";
+
+  const breadcrumbSchema = canonicalUrl && breadcrumbs.length > 0
+    ? safeJson({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: siteRoot || "/" },
+          ...breadcrumbs.map((crumb, i) => ({
+            "@type": "ListItem",
+            position: i + 2,
+            name: crumb.title,
+            item: `${siteRoot}/${crumb.slug}`,
+          })),
+          { "@type": "ListItem", position: breadcrumbs.length + 2, name: title, item: canonicalUrl },
+        ],
+      })
+    : null;
+
   const pageBody = (
     <article className="space-y-10">
+      {webPageSchema && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: webPageSchema }} />
+      )}
+      {breadcrumbSchema && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbSchema }} />
+      )}
       {/* Breadcrumb */}
       {breadcrumbs.length > 0 && (
         <nav className="flex items-center gap-1.5 text-xs text-[var(--color-muted)] flex-wrap">

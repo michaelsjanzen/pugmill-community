@@ -195,6 +195,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         layoutConfig={pageLayoutConfig}
         siblingPages={siblingPages}
         sidebarContent={pageSidebar}
+        canonicalUrl={canonicalUrl}
       />
     );
   }

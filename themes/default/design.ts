@@ -244,6 +244,23 @@ export const DESIGN_TOKEN_DEFS: DesignTokenDef[] = [
     editable: true,
     order: 2,
   },
+  {
+    key: "baseFontSize",
+    label: "Base font size",
+    description: "Body and article text size. Increase if your audience benefits from larger type.",
+    type: "select",
+    group: "typography",
+    cssVariable: "--font-size-base",
+    options: [
+      { value: "1rem",     label: "Normal (16px)" },
+      { value: "1.0625rem", label: "Comfortable (17px)" },
+      { value: "1.125rem", label: "Large (18px)" },
+      { value: "1.25rem",  label: "Extra Large (20px)" },
+    ],
+    default: "1rem",
+    editable: true,
+    order: 3,
+  },
 
   // Layout — Home
   {
@@ -716,6 +733,6 @@ export function buildCssString(
     }
   }
 
-  return `:root {\n${lines.join("\n")}\n}\n/* prose overrides so article text respects design tokens */\n.prose { color: var(--color-foreground); }\n.prose a { color: var(--color-link) !important; }\n.prose h1, .prose h2, .prose h3, .prose h4 { color: var(--color-foreground); }\nbody { font-family: var(--font-sans); background-color: var(--color-background); color: var(--color-foreground); }`;
+  return `:root {\n${lines.join("\n")}\n}\n/* prose overrides so article text respects design tokens */\n.prose { color: var(--color-foreground); font-size: var(--font-size-base); }\n.prose a { color: var(--color-link) !important; }\n.prose h1, .prose h2, .prose h3, .prose h4 { color: var(--color-foreground); }\nbody { font-family: var(--font-sans); font-size: var(--font-size-base); background-color: var(--color-background); color: var(--color-foreground); }`;
 }
 
