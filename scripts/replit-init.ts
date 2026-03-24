@@ -5,11 +5,12 @@
  * on every `npm run dev` (it skips steps that are already done).
  *
  * What it does:
- *   1. Auto-generates NEXTAUTH_SECRET  (writes to .env.local)
- *   2. Auto-detects  NEXTAUTH_URL      (from REPLIT_DEV_DOMAIN / REPL_SLUG)
- *   3. Creates all database tables     (IF NOT EXISTS — never drops)
- *   4. Seeds admin user               (skipped if one already exists)
- *   5. Prints credentials clearly
+ *   1. Checks DATABASE_URL is available (provided by Replit's PostgreSQL module)
+ *   2. Auto-generates NEXTAUTH_SECRET  (writes to .env.local)
+ *   3. Auto-detects  NEXTAUTH_URL      (from REPLIT_DEV_DOMAIN / REPL_SLUG)
+ *   4. Creates all database tables     (IF NOT EXISTS — never drops)
+ *   5. Seeds admin user and default content (skipped if already present)
+ *   6. Prints credentials clearly
  *
  * On non-Replit environments: exits immediately (no-op).
  * Run manually: npm run replit:init
@@ -27,14 +28,13 @@ const isReplit = !!(
 );
 
 if (!isReplit) {
-  // Not on Replit — nothing to do here
   process.exit(0);
 }
 
+// ─── .env.local helpers ───────────────────────────────────────────────────────
 const ROOT = process.cwd();
 const ENV_LOCAL = path.join(ROOT, ".env.local");
 
-// ─── .env.local helpers ───────────────────────────────────────────────────────
 function readEnvLocal(): Map<string, string> {
   const map = new Map<string, string>();
   if (!existsSync(ENV_LOCAL)) return map;
@@ -52,131 +52,142 @@ function writeEnvLocal(map: Map<string, string>) {
   writeFileSync(ENV_LOCAL, lines.join("\n") + "\n");
 }
 
-/** Checks process.env first (Replit secrets), then .env.local */
+/** Returns value from process.env (Replit secrets) or .env.local, in that order. */
 function getVar(key: string, envMap: Map<string, string>): string | undefined {
   return process.env[key] || envMap.get(key);
 }
 
-// ─── Phase 1: Ensure NEXTAUTH_SECRET and NEXTAUTH_URL ────────────────────────
-console.log("\nPugmill CMS — Setup\n");
+// ─── Main ─────────────────────────────────────────────────────────────────────
+async function main() {
+  console.log("\nPugmill CMS — First Run Setup\n");
 
-const envMap = readEnvLocal();
-const configured: string[] = [];
-
-// NEXTAUTH_SECRET — generate if missing
-if (!getVar("NEXTAUTH_SECRET", envMap)) {
-  const secret = crypto.randomBytes(32).toString("base64");
-  envMap.set("NEXTAUTH_SECRET", secret);
-  process.env.NEXTAUTH_SECRET = secret;
-  configured.push("NEXTAUTH_SECRET");
-}
-
-// NEXTAUTH_URL — detect from Replit env vars
-if (!getVar("NEXTAUTH_URL", envMap)) {
-  // REPLIT_DEV_DOMAIN is the newer env var (e.g. "myapp.username.repl.co")
-  const domain =
-    process.env.REPLIT_DEV_DOMAIN ||
-    (process.env.REPL_SLUG && process.env.REPL_OWNER
-      ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-      : null);
-
-  if (domain) {
-    const url = `https://${domain}`;
-    envMap.set("NEXTAUTH_URL", url);
-    process.env.NEXTAUTH_URL = url;
-    configured.push("NEXTAUTH_URL");
-    console.log(`  App URL detected: ${url}`);
-  } else {
-    console.log(
-      "  Warning: Could not detect app URL. Set NEXTAUTH_URL manually in .env.local"
+  // ── Step 1: DATABASE_URL ────────────────────────────────────────────────────
+  if (!process.env.DATABASE_URL) {
+    console.error(
+      "  Error: DATABASE_URL is not set.\n" +
+      "  On Replit, add the PostgreSQL module from the Tools sidebar — it sets\n" +
+      "  DATABASE_URL automatically. Then run: npm run replit:init\n"
     );
+    process.exit(1);
   }
-}
 
-if (configured.length > 0) {
-  writeEnvLocal(envMap);
-  console.log(`  Configured: ${configured.join(", ")} → .env.local\n`);
-}
+  // ── Step 2: NEXTAUTH_SECRET and NEXTAUTH_URL ────────────────────────────────
+  const envMap = readEnvLocal();
+  const configured: string[] = [];
 
-// Reload .env.local so db imports pick up the values we just wrote
-const { config: dotenvConfig } = await import("dotenv");
-dotenvConfig({ path: ENV_LOCAL, override: true });
+  if (!getVar("NEXTAUTH_SECRET", envMap)) {
+    const secret = crypto.randomBytes(32).toString("base64");
+    envMap.set("NEXTAUTH_SECRET", secret);
+    process.env.NEXTAUTH_SECRET = secret;
+    configured.push("NEXTAUTH_SECRET");
+  }
 
-// ─── Phase 2: Database schema ─────────────────────────────────────────────────
-console.log("Database");
-const { createSchema } = await import("./create-schema");
-await createSchema();
+  if (!getVar("NEXTAUTH_URL", envMap)) {
+    // REPLIT_DEV_DOMAIN is the current env var; fall back to REPL_SLUG + REPL_OWNER
+    const domain =
+      process.env.REPLIT_DEV_DOMAIN ||
+      (process.env.REPL_SLUG && process.env.REPL_OWNER
+        ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+        : null);
 
-// ─── Phase 3: Admin user ──────────────────────────────────────────────────────
-console.log("\nAdmin");
+    if (domain) {
+      const url = `https://${domain}`;
+      envMap.set("NEXTAUTH_URL", url);
+      process.env.NEXTAUTH_URL = url;
+      configured.push("NEXTAUTH_URL");
+      console.log(`  App URL: ${url}`);
+    } else {
+      console.log(
+        "  Warning: Could not detect app URL.\n" +
+        "  Set NEXTAUTH_URL manually in .env.local or as a Replit secret."
+      );
+    }
+  }
 
-const { db } = await import("../src/lib/db");
-const { adminUsers } = await import("../src/lib/db/schema");
-const bcrypt = await import("bcryptjs");
+  if (configured.length > 0) {
+    writeEnvLocal(envMap);
+    console.log(`  Auto-configured: ${configured.join(", ")} — saved to .env.local\n`);
+  }
 
-const existing = await db.select().from(adminUsers).limit(1);
+  // Ensure newly written .env.local values are in process.env for the db import
+  const { config: dotenvConfig } = await import("dotenv");
+  dotenvConfig({ path: ENV_LOCAL, override: false });
 
-if (existing.length > 0) {
-  console.log("  Admin account already exists — skipping.\n");
-} else {
-  // Use env vars if provided, otherwise generate sensible defaults
-  const email = process.env.ADMIN_EMAIL || "admin@pugmill.local";
+  // ── Step 3: Database schema ─────────────────────────────────────────────────
+  console.log("Database schema");
+  const { createSchema } = await import("./create-schema");
+  await createSchema();
 
-  let password: string;
-  let passwordSource: string;
+  // ── Step 4: Admin user + default content ────────────────────────────────────
+  console.log("\nAdmin setup");
 
-  if (process.env.ADMIN_PASSWORD) {
-    password = process.env.ADMIN_PASSWORD;
-    passwordSource = "from ADMIN_PASSWORD env var";
+  const { db } = await import("../src/lib/db");
+  const { adminUsers } = await import("../src/lib/db/schema");
+  const bcrypt = await import("bcryptjs");
+
+  const existing = await db.select().from(adminUsers).limit(1);
+
+  if (existing.length > 0) {
+    console.log("  Admin account already exists — skipping.\n");
   } else {
-    // Generate a readable random password
-    const words = [
-      "coral", "amber", "cedar", "flint", "grove",
-      "haven", "ivory", "jasper", "maple", "onyx",
-    ];
-    const w1 = words[crypto.randomInt(words.length)];
-    const w2 = words[crypto.randomInt(words.length)];
-    const num = crypto.randomInt(1000, 9999);
-    password = `${w1}-${w2}-${num}`;
-    passwordSource = "auto-generated";
+    const email = process.env.ADMIN_EMAIL || "admin@pugmill.local";
+    const name  = process.env.ADMIN_NAME  || "Admin";
+
+    let password: string;
+    let passwordNote: string;
+
+    if (process.env.ADMIN_PASSWORD) {
+      password     = process.env.ADMIN_PASSWORD;
+      passwordNote = "(from ADMIN_PASSWORD secret)";
+    } else {
+      const words = [
+        "coral", "amber", "cedar", "flint", "grove",
+        "haven", "ivory", "jasper", "maple", "onyx",
+      ];
+      const w1  = words[crypto.randomInt(words.length)];
+      const w2  = words[crypto.randomInt(words.length)];
+      const num = crypto.randomInt(1000, 9999);
+      password     = `${w1}-${w2}-${num}`;
+      passwordNote = "(auto-generated — save this now)";
+    }
+
+    const passwordHash = await bcrypt.default.hash(password, 12);
+
+    await db.insert(adminUsers).values({
+      email,
+      name,
+      passwordHash,
+      role: "admin",
+    } as typeof adminUsers.$inferInsert);
+
+    // Seed site config and default content
+    const { getConfig }          = await import("../src/lib/config");
+    const { seedDefaultContent } = await import("../seeds/default-content");
+    await getConfig();
+    const [admin] = await db.select().from(adminUsers).limit(1);
+    await seedDefaultContent(admin.id);
+
+    // Print credentials
+    const maxLen  = Math.max(email.length, password.length, 34);
+    const w       = maxLen + 2; // inner padding
+    const line    = "─".repeat(w + 2);
+    const pad     = (s: string) => s + " ".repeat(w + 2 - s.length);
+
+    console.log(`\n  ┌${line}┐`);
+    console.log(`  │ ${pad("Admin credentials " + passwordNote)} │`);
+    console.log(`  │ ${pad("")} │`);
+    console.log(`  │ ${pad("  Email:    " + email)} │`);
+    console.log(`  │ ${pad("  Password: " + password)} │`);
+    console.log(`  │ ${pad("")} │`);
+    console.log(`  │ ${pad("  Sign in at /admin/login")} │`);
+    console.log(`  └${line}┘\n`);
   }
 
-  const name = process.env.ADMIN_NAME || "Admin";
-  const passwordHash = await bcrypt.default.hash(password, 12);
-
-  await db.insert(adminUsers).values({
-    email,
-    name,
-    passwordHash,
-    role: "admin",
-  } as typeof adminUsers.$inferInsert);
-
-  // Seed site config (reads pugmill.config.json or uses built-in defaults)
-  const { getConfig } = await import("../src/lib/config");
-  await getConfig();
-
-  // Seed default content
-  const { seedDefaultContent } = await import("../seeds/default-content");
-  const [created] = await db
-    .select()
-    .from(adminUsers)
-    .limit(1);
-  await seedDefaultContent(created.id);
-
-  const border = "─".repeat(44);
-  console.log(`\n  ┌${border}┐`);
-  console.log(`  │  Admin credentials (${passwordSource.padEnd(21)})│`);
-  console.log(`  │                                              │`);
-  console.log(`  │  Email:    ${email.padEnd(34)}│`);
-  console.log(`  │  Password: ${password.padEnd(34)}│`);
-  console.log(`  │                                              │`);
-  console.log(`  │  Sign in at /admin/login                     │`);
-  console.log(`  └${border}┘\n`);
-
-  if (passwordSource === "auto-generated") {
-    console.log("  Save these credentials — they won't be shown again.\n");
-  }
+  console.log("Setup complete — starting server...\n");
+  process.exit(0);
 }
 
-console.log("Setup complete. Starting dev server...\n");
-process.exit(0);
+main().catch(err => {
+  console.error("\nSetup failed:", err.message ?? err);
+  process.exit(1);
+});
