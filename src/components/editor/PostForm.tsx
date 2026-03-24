@@ -47,19 +47,39 @@ function toSlug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
 }
 
-function AiBtn({ label, onClick, pending }: { label: string; onClick: () => void; pending: boolean }) {
+function AiBtn({ label, onClick, pending, activeKey, myKey }: {
+  label: string;
+  onClick: () => void;
+  pending: boolean;
+  activeKey?: string | null;
+  myKey?: string;
+}) {
+  const isActive = !!(myKey && activeKey === myKey);
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={pending}
       title={label}
-      className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-all
+        ${isActive
+          ? "bg-violet-600 border-violet-600 text-white cursor-wait"
+          : pending
+            ? "bg-violet-50 border-violet-200 text-violet-300 cursor-not-allowed"
+            : "bg-violet-50 border-violet-200 text-violet-600 hover:bg-violet-100 hover:border-violet-300"
+        }`}
     >
-      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-      {pending ? "…" : label}
+      {isActive ? (
+        <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+      ) : (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      )}
+      {isActive ? "Working…" : label}
     </button>
   );
 }
@@ -763,7 +783,7 @@ export default function PostForm({
           <div className="flex items-center justify-between mb-3">
             <SectionLabel>Title</SectionLabel>
             {aiEnabled && (
-              <AiBtn label="Suggest titles" pending={!!pendingAction} onClick={handleSuggestTitles} />
+              <AiBtn label="Suggest titles" pending={!!pendingAction} activeKey={pendingAction} myKey="titles" onClick={handleSuggestTitles} />
             )}
           </div>
           <input
@@ -820,7 +840,7 @@ export default function PostForm({
                   </button>
                 )}
                 {aiEnabled && (
-                  <AiBtn label="Generate" pending={!!pendingAction} onClick={handleGenerateSlug} />
+                  <AiBtn label="Generate" pending={!!pendingAction} activeKey={pendingAction} myKey="slug" onClick={handleGenerateSlug} />
                 )}
               </>
             )}
@@ -853,9 +873,9 @@ export default function PostForm({
                 <SectionLabel>Content</SectionLabel>
                 {aiEnabled && (
                   <div className="flex items-center gap-4">
-                    <AiBtn label="Write" pending={!!pendingAction} onClick={handleWrite} />
-                    <AiBtn label="Refine" pending={!!pendingAction} onClick={handleRefine} />
-                    <AiBtn label="Tone check" pending={!!pendingAction} onClick={handleToneCheck} />
+                    <AiBtn label="Write" pending={!!pendingAction} activeKey={pendingAction} myKey="write" onClick={handleWrite} />
+                    <AiBtn label="Refine" pending={!!pendingAction} activeKey={pendingAction} myKey="refine" onClick={handleRefine} />
+                    <AiBtn label="Tone check" pending={!!pendingAction} activeKey={pendingAction} myKey="tone-check" onClick={handleToneCheck} />
                   </div>
                 )}
               </div>
@@ -961,7 +981,7 @@ export default function PostForm({
           <div className="flex items-center justify-between mb-3">
             <SectionLabel>Excerpt</SectionLabel>
             {aiEnabled && (
-              <AiBtn label="Suggest" pending={!!pendingAction} onClick={handleSuggestExcerpt} />
+              <AiBtn label="Suggest" pending={!!pendingAction} activeKey={pendingAction} myKey="excerpt" onClick={handleSuggestExcerpt} />
             )}
           </div>
           <input
@@ -1034,7 +1054,7 @@ export default function PostForm({
               </div>
             </div>
             {aiEnabled && (
-              <AiBtn label="Generate AEO" pending={!!pendingAction} onClick={handleDraftAeo} />
+              <AiBtn label="Generate AEO" pending={!!pendingAction} activeKey={pendingAction} myKey="aeo" onClick={handleDraftAeo} />
             )}
           </div>
           <AeoMetadataEditor
