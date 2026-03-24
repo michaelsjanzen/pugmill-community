@@ -13,10 +13,6 @@ export default async function NewPostPage({
   const { type } = await searchParams;
   const defaultType = type === "page" ? "page" : "post";
 
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const defaultPublishAt = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-
   const [allCategories, allTags, allPages, aiEnabled, allMedia] = await Promise.all([
     db.select().from(categories).orderBy(categories.name),
     db.select().from(tags).orderBy(tags.name),
@@ -37,7 +33,7 @@ export default async function NewPostPage({
       action={createPost}
       aiEnabled={aiEnabled}
       initialType={defaultType}
-      initialPublishAt={defaultPublishAt}
+      initialPublishAt=""
       allCategories={allCategories}
       allTags={allTags}
       allPages={allPages}
