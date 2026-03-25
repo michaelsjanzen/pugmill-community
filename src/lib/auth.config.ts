@@ -13,6 +13,10 @@ import type { NextAuthConfig } from "next-auth";
  * The full auth config (with adapter, providers, signIn callback) lives in auth.ts.
  */
 const authConfig: NextAuthConfig = {
+  // Trust the host header so NextAuth works correctly across Replit's dev,
+  // preview, and production domains without an exact NEXTAUTH_URL match.
+  // Safe because all traffic goes through Replit's own reverse proxy.
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/admin/login",
