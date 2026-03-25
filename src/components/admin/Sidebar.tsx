@@ -6,6 +6,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   plugins?: { id: string; name: string; actionHref?: string }[];
+  themes?: { id: string; name: string; isActive: boolean }[];
   badges?: Record<string, number>;
 }
 
@@ -25,10 +26,7 @@ const contentSubItems = [
   { label: "Media", path: "/admin/media" },
 ];
 
-const designSubItems = [
-  { label: "Themes", path: "/admin/themes" },
-  { label: "Customize", path: "/admin/design" },
-];
+// designSubItems is now built dynamically from the themes prop — see render below
 
 const settingsSubItems = [
   { label: "Site Identity", path: "/admin/settings", exact: true },
@@ -68,7 +66,7 @@ function SubNav({ items }: { items: { label: string; path: string; exact?: boole
   );
 }
 
-export default function Sidebar({ isOpen, onClose, plugins = [], badges = {} }: Props) {
+export default function Sidebar({ isOpen, onClose, plugins = [], themes = [], badges = {} }: Props) {
   const pathname = usePathname();
   const inContentSection = contentSection.some(p => pathname.startsWith(p));
   const inDesignSection = designSection.some(p => pathname.startsWith(p));
@@ -175,7 +173,41 @@ export default function Sidebar({ isOpen, onClose, plugins = [], badges = {} }: 
                 <SubNav items={contentSubItems} />
               )}
               {item.path === "/admin/design" && inDesignSection && (
-                <SubNav items={designSubItems} />
+                <div className="mt-0.5 ml-3 space-y-0.5 border-l border-zinc-200 dark:border-zinc-700 pl-3">
+                  <Link
+                    href="/admin/themes"
+                    className={`block px-2 py-1.5 rounded-md text-xs transition-colors ${
+                      pathname === "/admin/themes"
+                        ? "bg-zinc-100 text-zinc-900 font-medium dark:bg-zinc-800 dark:text-zinc-100"
+                        : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    Themes
+                  </Link>
+                  {themes.length > 1 && themes.map(t => (
+                    <Link
+                      key={t.id}
+                      href="/admin/themes"
+                      className={`block px-2 py-1.5 rounded-md text-xs transition-colors ${
+                        pathname === "/admin/themes"
+                          ? "bg-zinc-100 text-zinc-900 font-medium dark:bg-zinc-800 dark:text-zinc-100"
+                          : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                      }`}
+                    >
+                      {t.name}{t.isActive ? " (active)" : ""}
+                    </Link>
+                  ))}
+                  <Link
+                    href="/admin/design"
+                    className={`block px-2 py-1.5 rounded-md text-xs transition-colors ${
+                      pathname.startsWith("/admin/design")
+                        ? "bg-zinc-100 text-zinc-900 font-medium dark:bg-zinc-800 dark:text-zinc-100"
+                        : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    Customize
+                  </Link>
+                </div>
               )}
               {item.path === "/admin/plugins" && inPluginsSection && (
                 <div className="mt-0.5 ml-3 space-y-0.5 border-l border-zinc-200 dark:border-zinc-700 pl-3">

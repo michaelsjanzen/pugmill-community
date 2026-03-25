@@ -10,10 +10,11 @@ interface Props {
   user: { username: string; role: string };
   children: React.ReactNode;
   plugins?: { id: string; name: string; actionHref?: string }[];
+  themes?: { id: string; name: string; isActive: boolean }[];
   badges?: Record<string, number>;
 }
 
-export default function AdminShell({ user, children, plugins = [], badges: initialBadges = {} }: Props) {
+export default function AdminShell({ user, children, plugins = [], themes = [], badges: initialBadges = {} }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [badges, setBadges] = useState<Record<string, number>>(initialBadges);
 
@@ -58,7 +59,7 @@ export default function AdminShell({ user, children, plugins = [], badges: initi
         />
       )}
 
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} plugins={plugins} badges={badges} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} plugins={plugins} themes={themes} badges={badges} />
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopBar user={user} onMenuClick={() => setSidebarOpen(true)} />

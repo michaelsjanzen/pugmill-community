@@ -94,10 +94,10 @@ export default function TaxonomyPicker({ label, fieldName, items, selectedIds, o
       </div>
 
       {/* AI suggestions */}
-      {suggestions && suggestions.filter(s => !appliedSuggestions.has(s)).length > 0 && (
+      {suggestions && suggestions.filter(s => !appliedSuggestions.has(s) && !selectedItems.some(item => item.name.toLowerCase() === s.toLowerCase())).length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 py-1">
           <span className="text-xs text-zinc-400">AI suggested:</span>
-          {suggestions.filter(s => !appliedSuggestions.has(s)).map(name => (
+          {suggestions.filter(s => !appliedSuggestions.has(s) && !selectedItems.some(item => item.name.toLowerCase() === s.toLowerCase())).map(name => (
             <button
               key={name}
               type="button"

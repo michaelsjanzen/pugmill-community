@@ -654,8 +654,6 @@ export default function PostForm({
     ? `Edit ${initialType === "page" ? "Page" : "Post"}`
     : "New Content";
 
-  const isScheduled = publishAt && new Date(publishAt) > new Date();
-
   function SectionLabel({ children }: { children: React.ReactNode }) {
     return (
       <p className="text-xs font-semibold tracking-widest text-zinc-700 uppercase mb-3">{children}</p>
@@ -731,7 +729,7 @@ export default function PostForm({
             onClick={() => { if (intentRef.current) intentRef.current.value = "publish"; }}
             className="px-3 py-1.5 rounded-lg bg-[var(--ds-blue-1000)] text-white text-sm font-medium hover:bg-[var(--ds-blue-900)] transition-colors"
           >
-            {isScheduled ? "Schedule" : "Publish"}
+            Publish
           </button>
         </div>
       </div>
@@ -799,11 +797,7 @@ export default function PostForm({
                     onChange={e => setPublishAt(e.target.value)}
                     className="w-full border border-zinc-200 rounded-lg px-3 py-1.5 text-sm bg-white text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400"
                   />
-                  {isScheduled && (
-                    <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
-                      Scheduled publishing requires a cron job. Works automatically on Vercel — on other hosts, call <code className="bg-zinc-100 px-0.5 rounded">/api/cron/publish-scheduled</code> on a regular interval.
-                    </p>
-                  )}
+
                 </>
               )}
             </div>
@@ -1291,7 +1285,7 @@ export default function PostForm({
             onClick={() => { if (intentRef.current) intentRef.current.value = "publish"; }}
             className="px-4 py-2 rounded-lg bg-[var(--ds-blue-1000)] text-white text-sm font-medium hover:bg-[var(--ds-blue-900)] transition-colors"
           >
-            {isScheduled ? "Schedule" : "Publish"}
+            Publish
           </button>
         </div>
       </form>
