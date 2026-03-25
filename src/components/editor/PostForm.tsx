@@ -1140,14 +1140,14 @@ export default function PostForm({
                     type="button"
                     onClick={() => handleSocialPost(p.id)}
                     disabled={socialPending}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
                       socialPlatform === p.id && socialPending
-                        ? "border-blue-500 text-blue-700 bg-blue-50 opacity-100 cursor-wait"
+                        ? "bg-violet-600 border-violet-600 text-white cursor-wait"
                         : socialPlatform === p.id && !socialPending
-                          ? "border-blue-500 bg-blue-500 text-white"
+                          ? "bg-violet-600 border-violet-600 text-white"
                           : socialPending
-                            ? "border-zinc-100 text-zinc-300 bg-white cursor-not-allowed"
-                            : "border-zinc-200 text-zinc-600 bg-white hover:border-blue-300 hover:text-blue-600"
+                            ? "bg-violet-50 border-violet-200 text-violet-300 cursor-not-allowed"
+                            : "bg-violet-50 border-violet-200 text-violet-600 hover:bg-violet-100 hover:border-violet-300"
                     }`}
                   >
                     {socialPlatform === p.id && socialPending ? "Generating…" : p.label}
