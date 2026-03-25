@@ -38,7 +38,26 @@ export default async function LoginPage({
       });
     } catch (error) {
       if (error instanceof AuthError) {
-        redirect(`/admin/login?error=${encodeURIComponent(error.message || "Invalid email or password")}`);
+        // Map NextAuth error types to human-friendly messages.
+        // Never expose internal error.message — it contains docs URLs and internals.
+        let msg: string;
+        switch (error.type) {
+          case "CredentialsSignin":
+            // Check if the cause was a rate-limit throw from authorize()
+            msg = (error.cause as { err?: Error } | undefined)?.err?.message?.startsWith("Too many")
+              ? ((error.cause as { err?: Error }).err!.message)
+              : "Incorrect email or password. Please try again.";
+            break;
+          case "AccessDenied":
+            msg = "Your account does not have access. Contact an administrator.";
+            break;
+          case "OAuthAccountNotLinked":
+            msg = "This email is already associated with a different sign-in method.";
+            break;
+          default:
+            msg = "Sign in failed. Please try again.";
+        }
+        redirect(`/admin/login?error=${encodeURIComponent(msg)}`);
       }
       throw error;
     }
