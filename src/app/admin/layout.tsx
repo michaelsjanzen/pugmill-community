@@ -1,3 +1,6 @@
+// All admin routes are authenticated and DB-driven — never prerender statically.
+export const dynamic = "force-dynamic";
+
 import { getCurrentUser } from "@/lib/get-current-user";
 import { getConfig } from "@/lib/config";
 import { getAllPlugins } from "@/lib/plugin-registry";
