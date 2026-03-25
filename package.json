@@ -18,7 +18,7 @@
     "env:check": "npx tsx scripts/env-check.ts",
     "replit:init": "REPLIT_REINIT=1 npx tsx scripts/replit-init.ts",
     "predev": "npx tsx scripts/replit-init.ts",
-    "prepare": "husky || true"
+    "prepare": "husky 2>/dev/null || true"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
@@ -60,10 +60,10 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.20",
-    "dotenv": "^17.3.1",
+    "dotenv": "^16.6.1",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.16.0",
-    "eslint-config-next": "15.1.0",
+    "eslint-config-next": "16.2.1",
     "husky": "^9.1.7",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",

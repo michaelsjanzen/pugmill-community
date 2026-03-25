@@ -195,6 +195,9 @@ Pugmill uses environment variables for all secrets. See `.env.example` for the f
 - **Local dev:** Copy `.env.example` → `.env.local` and fill in values
 - **Self-hosted / Other AI IDEs:** Use [Doppler](https://doppler.com) or [Infisical](https://infisical.com)
 
+#### Replit Preview Pane / Workflow Registration
+The `.replit` `run` field and Replit's workflow system are two separate concepts. The `run = "npm run dev"` config starts the server, but the preview pane connects via the **workflow system**, which must be registered separately inside the Replit UI. If the preview pane is blank after a successful `npm run dev`, this is a platform-level step — not a code issue. Register or re-run the workflow from the Replit interface to connect it.
+
 #### Replit / Fresh Container Install Note
 If `npm install` fails with `ENOTEMPTY: directory not empty, rmdir 'node_modules/@swc/helpers/_'`, this is a known npm/SWC interoperability bug triggered by a partial prior install. Workaround:
 ```bash

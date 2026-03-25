@@ -19,7 +19,7 @@ check_pattern() {
   DESCRIPTION="$1"
   PATTERN="$2"
 
-  MATCHES=$(echo "$STAGED" | xargs grep -lE "$PATTERN" 2>/dev/null | grep -v ".env.example" | grep -v "SECURITY.md" | grep -v "env-check.ts" | grep -v "validate-env.ts" | grep -v "pre-commit" | grep -v "\.md$")
+  MATCHES=$(echo "$STAGED" | xargs grep -lE "$PATTERN" 2>/dev/null | grep -v ".env.example" | grep -v "SECURITY.md" | grep -v "env-check.ts" | grep -v "validate-env.ts" | grep -v "pre-commit" | grep -v "\.md$" || true)
 
   if [ -n "$MATCHES" ]; then
     echo ""
@@ -31,7 +31,7 @@ check_pattern() {
 }
 
 # Check for .env files being committed
-ENV_FILES=$(echo "$STAGED" | grep -E "^\.env(\..+)?$" | grep -v ".env.example")
+ENV_FILES=$(echo "$STAGED" | grep -E "^\.env(\..+)?$" | grep -v ".env.example" || true)
 if [ -n "$ENV_FILES" ]; then
   echo ""
   echo "  ❌ Attempting to commit .env file(s):"
