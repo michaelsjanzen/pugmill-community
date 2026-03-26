@@ -80,7 +80,7 @@ INSERT INTO public.media (id, file_name, file_type, file_size, url, storage_key,
 -- Data for Name: plugin_community_members; Type: TABLE DATA; Schema: public; Owner: michaeljanzen
 --
 
-INSERT INTO public.plugin_community_members (id, github_id, github_handle, github_avatar_url, github_access_token, tier, score, score_updated_at, created_at, last_active_at) VALUES (1, '201247629', 'michaelsjanzen', 'https://avatars.githubusercontent.com/u/201247629?v=4', 'REDACTED', 'apprentice', 0, NULL, '2026-03-26 07:17:28.995146', '2026-03-26 17:41:30.934');
+INSERT INTO public.plugin_community_members (id, github_id, github_handle, github_avatar_url, github_access_token, tier, score, score_updated_at, created_at, last_active_at) VALUES (1, '201247629', 'michaelsjanzen', 'https://avatars.githubusercontent.com/u/201247629?v=4', '', 'apprentice', 0, NULL, '2026-03-26 07:17:28.995146', '2026-03-26 17:41:30.934');
 
 
 --
