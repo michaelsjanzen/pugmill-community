@@ -193,12 +193,14 @@ import { commentsPlugin } from "../../plugins/comments/index";
 import { cookieConsentPlugin } from "../../plugins/cookie-consent/index";
 import { contactFormPlugin } from "../../plugins/contact-form/index";
 import { defaultWidgetsPlugin } from "../../plugins/default-widgets/index";
+import { communityPlugin } from "../../plugins/community/index";
 
 const ALL_PLUGINS: PugmillPlugin[] = [
   commentsPlugin,
   contactFormPlugin,
   cookieConsentPlugin,
   defaultWidgetsPlugin,
+  communityPlugin,
 ];
 
 let initPromise: Promise<void> | null = null;

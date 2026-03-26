@@ -1,0 +1,8 @@
+{
+  "id": "community",
+  "name": "Pugmill Community",
+  "version": "0.1.0",
+  "description": "Recipe registry, member profiles, contribution scoring, and GitHub-backed artifact hosting for the Pugmill developer community.",
+  "author": "Pugmill",
+  "pugmillVersion": "^0.1.0"
+}

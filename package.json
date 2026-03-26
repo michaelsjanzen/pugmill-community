@@ -1,13 +1,13 @@
 {
-  "name": "pugmill",
+  "name": "pugmill-community",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "test": "vitest",
     "test:run": "vitest run",
-    "dev": "next dev -p ${PORT:-3000} -H 0.0.0.0",
+    "dev": "next dev -p ${PORT:-3002} -H 0.0.0.0",
     "build": "next build",
-    "start": "next start -p ${PORT:-3000} -H 0.0.0.0",
+    "start": "next start -p ${PORT:-3002} -H 0.0.0.0",
     "lint": "next lint",
     "setup": "npx tsx scripts/setup.ts",
     "db:push": "drizzle-kit push --force",

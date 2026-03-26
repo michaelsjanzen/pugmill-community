@@ -97,7 +97,6 @@ const THEME_MODULES: Record<string, ThemeModuleSet> = {
       buildGoogleFontsUrl: defaultBuildGoogleFontsUrl,
     },
   },
-  // ADD NEW THEMES HERE
 };
 
 const DEFAULT_MODULES = THEME_MODULES.default;

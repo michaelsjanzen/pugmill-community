@@ -184,19 +184,6 @@ export default function Sidebar({ isOpen, onClose, plugins = [], themes = [], ba
                   >
                     Themes
                   </Link>
-                  {themes.length > 1 && themes.map(t => (
-                    <Link
-                      key={t.id}
-                      href="/admin/themes"
-                      className={`block px-2 py-1.5 rounded-md text-xs transition-colors ${
-                        pathname === "/admin/themes"
-                          ? "bg-zinc-100 text-zinc-900 font-medium dark:bg-zinc-800 dark:text-zinc-100"
-                          : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-                      }`}
-                    >
-                      {t.name}{t.isActive ? " (active)" : ""}
-                    </Link>
-                  ))}
                   <Link
                     href="/admin/design"
                     className={`block px-2 py-1.5 rounded-md text-xs transition-colors ${

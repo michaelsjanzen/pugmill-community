@@ -156,6 +156,15 @@ export interface ActionCatalogue {
 
   /** Fired after a visitor updates their consent preferences. */
   "consent:after-update": { categories: { essential: true; nonEssential: boolean } };
+
+  /** Fired after a recipe is submitted to the community registry. */
+  "community:recipe-submitted": { recipeId: number; type: string; ownerId: string };
+
+  /** Fired after a new member joins the community. */
+  "community:member-joined": { memberId: string; githubHandle: string };
+
+  /** Fired after a member stars a recipe. */
+  "community:recipe-starred": { recipeId: number; memberId: string };
 }
 
 // ─── Filter Catalogue ─────────────────────────────────────────────────────────

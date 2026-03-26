@@ -75,7 +75,6 @@ import defaultManifest from "../../themes/default/manifest.json";
 
 const ALL_THEMES: ThemeManifest[] = [
   defaultManifest,
-  // ADD NEW THEMES HERE
 ];
 
 /**
